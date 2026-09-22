@@ -346,9 +346,9 @@ barbers-awards/
 │   │   ├── whatsapp.ts
 │   │   ├── image-compression.ts
 │   │   ├── accent.ts                    # llaves de acento y su validación
-│   │   ├── logo-presets.tsx             # catálogo de logos e íconos de servicio
+│   │   ├── logo-presets.tsx             # catálogo de logos de la barbería
 │   │   ├── horarios.ts                  # esquema zod, agrupación y "abierto ahora"
-│   │   └── validators.ts                # esquemas zod
+│   │   └── validators.ts                # esquemas zod (incluye SERVICIO_ICONOS_SUGERIDOS)
 │   ├── types/database.ts                # generado con supabase gen types
 │   └── proxy.ts                         # middleware.ts en Next.js < 16
 ├── public/
@@ -364,6 +364,14 @@ las rutas del segmento donde vive. Poniendo el `layout.tsx` que verifica
 `administrator` solo dentro de `(protected)/`, `/admin/login` queda fuera de
 esa verificación (sigue detrás de `src/proxy.ts` y del propio formulario, pero
 sin quedar atrapado en un bucle de redirección hacia sí mismo).
+
+`logo-presets.tsx` (logo de la barbería, CU-09) y `SERVICIO_ICONOS_SUGERIDOS`
+en `validators.ts` (ícono de un servicio, CU-11) son dos catálogos
+independientes, no uno solo: un logo de barbería ("poste", "bigote",
+"brocha") no tiene sentido como ícono de un servicio, y viceversa ("barba",
+"corte" no son logos). El campo de ícono de servicio no está limitado a esa
+lista sugerida — `SCHEMA.sql` solo exige el formato `^[a-z0-9-]{2,30}$` —,
+es únicamente el texto de ayuda que ve el dueño al crear un servicio.
 
 ### 3.3 Autenticación y protección de rutas
 
