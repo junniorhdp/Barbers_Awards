@@ -313,7 +313,9 @@ barbers-awards/
 │   │   ├── (public)/
 │   │   │   ├── page.tsx                 # /
 │   │   │   ├── directorio/page.tsx
-│   │   │   ├── barberia/[id]/page.tsx
+│   │   │   ├── barberia/
+│   │   │   │   ├── perfil.css           # tema aislado del perfil público (2.6)
+│   │   │   │   └── [id]/page.tsx
 │   │   │   └── verificar/[folio]/page.tsx
 │   │   ├── (auth)/
 │   │   │   ├── actions.ts               # Server Actions login() y registrarBarberia()
@@ -341,13 +343,16 @@ barbers-awards/
 │   │       └── webhooks/wompi/route.ts
 │   ├── components/                      # ui, barberias, perfil, sellos, dashboard, admin
 │   ├── lib/
-│   │   ├── supabase/                    # client.ts, server.ts, admin.ts, middleware.ts
+│   │   ├── supabase/                    # client.ts, server.ts, admin.ts, middleware.ts, public.ts
 │   │   ├── wompi.ts
 │   │   ├── whatsapp.ts
 │   │   ├── image-compression.ts
 │   │   ├── accent.ts                    # llaves de acento y su validación
 │   │   ├── logo-presets.tsx             # catálogo de logos de la barbería
+│   │   ├── servicio-iconos.tsx          # mapeo de íconos de servicio a lucide-react
 │   │   ├── horarios.ts                  # esquema zod, agrupación y "abierto ahora"
+│   │   ├── storage.ts                   # URL pública de un objeto del bucket
+│   │   ├── color.ts                     # utilidades de contraste para SealBadge
 │   │   └── validators.ts                # esquemas zod (incluye SERVICIO_ICONOS_SUGERIDOS)
 │   ├── types/database.ts                # generado con supabase gen types
 │   └── proxy.ts                         # middleware.ts en Next.js < 16
@@ -364,6 +369,13 @@ las rutas del segmento donde vive. Poniendo el `layout.tsx` que verifica
 `administrator` solo dentro de `(protected)/`, `/admin/login` queda fuera de
 esa verificación (sigue detrás de `src/proxy.ts` y del propio formulario, pero
 sin quedar atrapado en un bucle de redirección hacia sí mismo).
+
+`lib/supabase/public.ts` (agregado en la Fase 4) es el cliente `supabase-js`
+plano sin cookies que la tabla de la sección 3.4 ya exigía para páginas
+públicas ISR (`/`, `/directorio`, `/barberia/[id]`) pero que no tenía un
+archivo propio listado aquí — `client.ts` es para componentes de cliente y
+`server.ts` lee cookies, ninguno de los dos sirve para no romper el ISR
+(3.5).
 
 `logo-presets.tsx` (logo de la barbería, CU-09) y `SERVICIO_ICONOS_SUGERIDOS`
 en `validators.ts` (ícono de un servicio, CU-11) son dos catálogos
@@ -1022,7 +1034,7 @@ Vercel verifica esos registros y emite el certificado SSL automáticamente; no h
 
 ## 7. Decisiones abiertas y pendientes
 
-Puntos donde los casos de uso o el esquema aún no definen todo lo que la aplicación necesita. Las filas 1, 3 y 4 quedaron resueltas y se conservan por trazabilidad; la 2 quedó resuelta solo en parte.
+Puntos donde los casos de uso o el esquema aún no definen todo lo que la aplicación necesita. Las filas 1, 3, 4 y 11 quedaron resueltas y se conservan por trazabilidad; la 2 quedó resuelta solo en parte.
 
 | # | Tema | Situación actual | Propuesta |
 | --- | --- | --- | --- |
@@ -1036,7 +1048,7 @@ Puntos donde los casos de uso o el esquema aún no definen todo lo que la aplica
 | 8 | Suscripción vencida | No está definido qué ve el público | Sugerido: mantener el perfil y ocultar o marcar como no vigente el sello |
 | 9 | Confirmación de correo en el registro | Determina si el insert de la barbería puede hacerse con la sesión del usuario | Recomendado: Server Action con cliente administrador (ver 3.6) |
 | 10 | Precios y reglas de la prueba | Precios de los planes y alcance del periodo `prueba` sin definir | Definir antes de configurar `PLAN_*_PRECIO_COP` |
-| 11 | Identificador en la URL del perfil | USE_CASES usa `/barberia/[id]`; el esquema tiene `slug` único | Resolver `[id]` por `slug` (mejor SEO) o por UUID |
+| 11 | Identificador en la URL del perfil | **Resuelto en Fase 4.** El segmento `[id]` se resuelve por `slug` (mejor SEO), tal como ya lo asumía el ejemplo de consulta de la sección 3.7 | Resuelto: `.eq('slug', id)` |
 | 12 | Logo propio | El MVP ofrece solo logos predefinidos; no se suben archivos | Confirmar. Permitir logo propio exigiría moderar imágenes para que no imiten el sello de Barbers Awards |
 | 13 | Reseñas y testimonios | Fuera del MVP: no existe tabla y no se muestran cifras sin fuente (como "+300 reseñas") | Fase 2, con una tabla de reseñas verificadas |
 | 14 | Zona horaria de "Abierto ahora" | Se usa `America/Bogota` | Confirmar; si habrá barberías fuera de Colombia, agregar la columna `zona_horaria` |

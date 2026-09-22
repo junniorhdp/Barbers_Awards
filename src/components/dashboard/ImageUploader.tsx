@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { compressToWebp } from "@/lib/image-compression";
+import { publicStorageUrl } from "@/lib/storage";
 
 const BUCKET = "barberias-storage";
 
@@ -69,7 +70,4 @@ export function ImageUploader({ barberiaId, carpeta, accept, multiple, etiqueta,
   );
 }
 
-export function urlPublicaStorage(ruta: string): string {
-  const supabase = createClient();
-  return supabase.storage.from(BUCKET).getPublicUrl(ruta).data.publicUrl;
-}
+export const urlPublicaStorage = publicStorageUrl;
