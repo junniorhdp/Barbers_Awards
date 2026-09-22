@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Barbería El Rayo de Oro — Cortes que Brillan como el Oro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --gold:#d4af37;
+    --gold-light:#f3d67a;
+    --gold-dark:#a3801f;
+    --black:#101012;
+    --charcoal:#1b1b1f;
+    --charcoal-2:#232328;
+    --cream:#faf6ee;
+    --cream-2:#f1e9d8;
+    --text-dark:#2a2a2a;
+    --text-light:#f5f0e6;
+    --red-accent:#8c1c1c;
+  }
+
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+
+  body{
+    font-family:'Poppins', 'Segoe UI', sans-serif;
+    background:var(--cream);
+    color:var(--text-dark);
+    overflow-x:hidden;
+  }
+
+  h1,h2,h3,.logo-text{ font-family:'Playfair Display', Georgia, serif; }
+
+  img{ max-width:100%; }
+
+  a{ text-decoration:none; color:inherit; }
+
+  ::selection{ background:var(--gold); color:var(--black); }
+
+  /* ---------- utility ---------- */
+  .container{ max-width:1180px; margin:0 auto; padding:0 24px; }
+  .section-label{
+    display:inline-block;
+    color:var(--gold-dark);
+    font-weight:600;
+    letter-spacing:3px;
+    text-transform:uppercase;
+    font-size:13px;
+    margin-bottom:10px;
+  }
+  .section-title{
+    font-size:clamp(28px, 4vw, 42px);
+    color:var(--black);
+    margin-bottom:16px;
+  }
+  .section-sub{
+    max-width:620px;
+    margin:0 auto 50px;
+    color:#5c5c5c;
+    font-size:16px;
+    line-height:1.7;
+  }
+  .center{ text-align:center; }
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:14px 32px;
+    border-radius:50px;
+    font-weight:600;
+    font-size:15px;
+    cursor:pointer;
+    border:none;
+    transition:transform .25s ease, box-shadow .25s ease;
+  }
+  .btn-gold{
+    background:linear-gradient(135deg, var(--gold-light), var(--gold) 55%, var(--gold-dark));
+    color:var(--black);
+    box-shadow:0 10px 25px -8px rgba(212,175,55,.7);
+  }
+  .btn-gold:hover{ transform:translateY(-3px); box-shadow:0 14px 30px -8px rgba(212,175,55,.85); }
+  .btn-outline{
+    background:transparent;
+    color:var(--text-light);
+    border:1.5px solid rgba(245,240,230,.6);
+  }
+  .btn-outline:hover{ background:rgba(245,240,230,.12); transform:translateY(-3px); }
+
+  .reveal{
+    opacity:0;
+    transform:translateY(30px);
+    transition:opacity .8s ease, transform .8s ease;
+  }
+  .reveal.in{ opacity:1; transform:translateY(0); }
+
+  /* ---------- 3D LOGO ---------- */
+  .logo{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .logo-badge{
+    width:52px; height:52px;
+    border-radius:50%;
+    position:relative;
+    background:
+      radial-gradient(circle at 30% 25%, #fff7dd 0%, var(--gold-light) 18%, var(--gold) 45%, var(--gold-dark) 75%, #7a5f16 100%);
+    box-shadow:
+      0 6px 10px rgba(0,0,0,.35),
+      inset 0 3px 4px rgba(255,255,255,.65),
+      inset 0 -4px 6px rgba(0,0,0,.45);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+  }
+  .logo-badge::before{
+    content:"";
+    position:absolute;
+    inset:4px;
+    border-radius:50%;
+    border:1px solid rgba(255,255,255,.35);
+  }
+  .logo-badge svg{ width:26px; height:26px; filter:drop-shadow(0 1px 1px rgba(0,0,0,.5)); }
+  .logo-text{
+    font-weight:700;
+    font-size:19px;
+    line-height:1.05;
+    color:var(--text-light);
+  }
+  .logo-text span{
+    display:block;
+    font-family:'Poppins', sans-serif;
+    font-size:10.5px;
+    font-weight:400;
+    letter-spacing:2px;
+    color:var(--gold-light);
+    text-transform:uppercase;
+    margin-top:2px;
+  }
+  header .logo-text{ color:var(--black); }
+  header .logo-text span{ color:var(--gold-dark); }
+
+  /* ---------- header ---------- */
+  header{
+    position:fixed;
+    top:0; left:0; right:0;
+    z-index:1000;
+    background:rgba(250,246,238,.75);
+    backdrop-filter:blur(14px) saturate(160%);
+    border-bottom:1px solid rgba(0,0,0,.06);
+    transition:background .3s ease, box-shadow .3s ease;
+  }
+  header.scrolled{ box-shadow:0 6px 20px rgba(0,0,0,.08); }
+  .navbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 24px;
+    max-width:1180px;
+    margin:0 auto;
+  }
+  .nav-links{
+    display:flex;
+    gap:34px;
+    list-style:none;
+  }
+  .nav-links a{
+    font-weight:500;
+    font-size:14.5px;
+    color:var(--text-dark);
+    position:relative;
+    padding-bottom:4px;
+  }
+  .nav-links a::after{
+    content:"";
+    position:absolute; left:0; bottom:0;
+    width:0; height:2px;
+    background:var(--gold);
+    transition:width .3s ease;
+  }
+  .nav-links a:hover::after{ width:100%; }
+  .nav-cta{ display:flex; align-items:center; gap:16px; }
+  .nav-cta .btn{ padding:10px 22px; font-size:13.5px; }
+
+  .burger{
+    display:none;
+    flex-direction:column;
+    gap:5px;
+    cursor:pointer;
+    background:none;
+    border:none;
+    padding:6px;
+  }
+  .burger span{ width:24px; height:2.5px; background:var(--black); border-radius:2px; transition:.3s; }
+
+  .mobile-menu{
+    display:none;
+    flex-direction:column;
+    background:var(--cream);
+    padding:10px 24px 22px;
+    border-bottom:1px solid rgba(0,0,0,.08);
+  }
+  .mobile-menu a{
+    padding:12px 0;
+    font-weight:500;
+    border-bottom:1px solid rgba(0,0,0,.06);
+  }
+  .mobile-menu.open{ display:flex; }
+
+  /* ---------- hero ---------- */
+  .hero{
+    position:relative;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    background:
+      radial-gradient(circle at 80% 20%, rgba(212,175,55,.18), transparent 45%),
+      linear-gradient(160deg, var(--black) 0%, var(--charcoal) 45%, var(--charcoal-2) 100%);
+    overflow:hidden;
+    padding-top:80px;
+  }
+  .hero::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background-image:
+      linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+    background-size:42px 42px;
+    mask-image:radial-gradient(circle at 60% 40%, black, transparent 75%);
+  }
+  .hero-grid{
+    display:grid;
+    grid-template-columns:1.15fr .85fr;
+    gap:50px;
+    align-items:center;
+    position:relative;
+    z-index:2;
+  }
+  .hero-eyebrow{
+    color:var(--gold-light);
+    letter-spacing:3px;
+    text-transform:uppercase;
+    font-size:13px;
+    font-weight:600;
+    margin-bottom:18px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .hero-eyebrow::before{ content:""; width:34px; height:2px; background:var(--gold); }
+  .hero h1{
+    font-size:clamp(38px, 6vw, 64px);
+    line-height:1.08;
+    color:var(--text-light);
+    margin-bottom:22px;
+  }
+  .hero h1 em{
+    font-style:normal;
+    background:linear-gradient(100deg, var(--gold-light), var(--gold) 40%, var(--gold-dark));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  .hero p{
+    color:#cfc9bd;
+    font-size:16.5px;
+    line-height:1.8;
+    max-width:480px;
+    margin-bottom:34px;
+  }
+  .hero-btns{ display:flex; gap:16px; flex-wrap:wrap; margin-bottom:46px; }
+  .hero-stats{
+    display:flex;
+    gap:36px;
+    flex-wrap:wrap;
+  }
+  .hero-stats div{ text-align:left; }
+  .hero-stats strong{
+    display:block;
+    font-family:'Playfair Display', serif;
+    font-size:30px;
+    color:var(--gold-light);
+  }
+  .hero-stats span{ font-size:12.5px; color:#a9a29332; color:#a9a293; letter-spacing:.5px; }
+
+  /* barber pole visual */
+  .hero-visual{
+    position:relative;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:460px;
+  }
+  .pole-frame{
+    width:200px;
+    height:420px;
+    border-radius:100px;
+    background:linear-gradient(135deg,#3a3a3d,#111);
+    box-shadow:0 30px 60px -20px rgba(0,0,0,.6), inset 0 0 0 6px rgba(212,175,55,.35);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+  }
+  .pole{
+    width:150px;
+    height:380px;
+    border-radius:80px;
+    overflow:hidden;
+    box-shadow:inset 0 0 20px rgba(0,0,0,.5), 0 0 40px rgba(212,175,55,.25);
+    position:relative;
+  }
+  .pole-stripes{
+    position:absolute;
+    top:-50%; left:-50%;
+    width:200%; height:250%;
+    background:repeating-linear-gradient(
+      45deg,
+      #e6e6e6 0 20px,
+      #b8121f 20px 40px,
+      #e6e6e6 40px 60px,
+      #1c3f91 60px 80px
+    );
+    animation:pole-spin 3.5s linear infinite;
+  }
+  @keyframes pole-spin{
+    from{ transform:translateY(0); }
+    to{ transform:translateY(80px); }
+  }
+  .pole-cap{
+    position:absolute;
+    width:170px; height:36px;
+    background:linear-gradient(135deg, var(--gold-light), var(--gold-dark));
+    border-radius:20px;
+    box-shadow:0 6px 14px rgba(0,0,0,.4);
+  }
+  .pole-cap.top{ top:-18px; }
+  .pole-cap.bottom{ bottom:-18px; }
+
+  .float-badge{
+    position:absolute;
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.18);
+    backdrop-filter:blur(10px);
+    border-radius:16px;
+    padding:12px 16px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    color:var(--text-light);
+    font-size:13px;
+    font-weight:500;
+    animation:floaty 4s ease-in-out infinite;
+  }
+  .float-badge.b1{ top:8%; left:-4%; animation-delay:0s; }
+  .float-badge.b2{ bottom:10%; right:-6%; animation-delay:1.4s; }
+  @keyframes floaty{
+    0%,100%{ transform:translateY(0); }
+    50%{ transform:translateY(-14px); }
+  }
+  .float-badge .dot{ width:8px; height:8px; border-radius:50%; background:#4ade80; box-shadow:0 0 8px #4ade80; }
+
+  .scroll-cue{
+    position:absolute;
+    bottom:26px; left:50%;
+    transform:translateX(-50%);
+    color:#cfc9bd;
+    font-size:11px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+    z-index:2;
+  }
+  .scroll-cue .line{
+    width:1px; height:34px;
+    background:linear-gradient(var(--gold), transparent);
+    animation:scrolldown 1.8s ease-in-out infinite;
+  }
+  @keyframes scrolldown{
+    0%{ transform:scaleY(0); opacity:0; }
+    40%{ transform:scaleY(1); opacity:1; }
+    100%{ transform:scaleY(1); opacity:0; }
+  }
+
+  /* ---------- about / bienvenida ---------- */
+  .about{ padding:110px 0 90px; background:var(--cream); }
+  .about-grid{
+    display:grid;
+    grid-template-columns:.9fr 1.1fr;
+    gap:60px;
+    align-items:center;
+  }
+  .about-visual{
+    position:relative;
+    border-radius:24px;
+    height:400px;
+    background:linear-gradient(150deg, var(--charcoal), var(--black));
+    box-shadow:0 30px 60px -25px rgba(0,0,0,.4);
+    overflow:hidden;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .about-visual .icon-big{
+    font-size:110px;
+    filter:drop-shadow(0 10px 25px rgba(212,175,55,.35));
+  }
+  .about-visual::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:radial-gradient(circle at 30% 20%, rgba(212,175,55,.25), transparent 55%);
+  }
+  .about-card-float{
+    position:absolute;
+    bottom:20px; left:20px;
+    background:var(--cream);
+    border-radius:14px;
+    padding:14px 18px;
+    box-shadow:0 18px 40px -12px rgba(0,0,0,.35);
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .about-card-float strong{ font-family:'Playfair Display',serif; font-size:20px; display:block; color:var(--black); }
+  .about-card-float span{ font-size:11.5px; color:#7a7a7a; }
+  .stars{ color:var(--gold); font-size:14px; letter-spacing:2px; }
+
+  .about-text p{ color:#565656; font-size:16px; line-height:1.85; margin-bottom:18px; }
+  .checklist{ list-style:none; display:grid; gap:12px; margin-top:26px; }
+  .checklist li{ display:flex; align-items:center; gap:12px; font-size:15px; color:var(--text-dark); font-weight:500; }
+  .checklist li .check{
+    width:22px; height:22px; border-radius:50%;
+    background:linear-gradient(135deg, var(--gold-light), var(--gold-dark));
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+    font-size:12px; color:var(--black);
+  }
+
+  /* ---------- servicios ---------- */
+  .services{ padding:100px 0; background:var(--cream-2); }
+  .service-grid{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:26px;
+  }
+  .service-card{
+    background:#fff;
+    border-radius:18px;
+    padding:32px 26px;
+    box-shadow:0 12px 30px -18px rgba(0,0,0,.15);
+    transition:transform .35s ease, box-shadow .35s ease;
+    position:relative;
+    overflow:hidden;
+  }
+  .service-card:hover{
+    transform:translateY(-8px);
+    box-shadow:0 24px 45px -20px rgba(0,0,0,.25);
+  }
+  .service-card .icon-wrap{
+    width:58px; height:58px;
+    border-radius:16px;
+    background:linear-gradient(135deg, var(--gold-light), var(--gold) 60%, var(--gold-dark));
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom:20px;
+    font-size:26px;
+    box-shadow:0 10px 20px -8px rgba(212,175,55,.6);
+  }
+  .service-card h3{ font-size:19px; color:var(--black); margin-bottom:8px; }
+  .service-card p{ font-size:14.5px; color:#6b6b6b; line-height:1.6; margin-bottom:18px; }
+  .service-card .price{
+    font-family:'Playfair Display', serif;
+    font-size:24px;
+    color:var(--gold-dark);
+    font-weight:700;
+  }
+  .service-card .price span{ font-size:12px; color:#999; font-family:'Poppins',sans-serif; font-weight:400; }
+  .service-card.featured{ border:2px solid var(--gold); }
+  .ribbon{
+    position:absolute; top:16px; right:-30px;
+    background:var(--red-accent);
+    color:#fff;
+    font-size:11px;
+    font-weight:600;
+    padding:5px 34px;
+    transform:rotate(35deg);
+    letter-spacing:1px;
+  }
+
+  /* ---------- galeria ---------- */
+  .gallery{ padding:100px 0; background:var(--black); }
+  .gallery .section-label{ color:var(--gold-light); }
+  .gallery .section-title{ color:var(--text-light); }
+  .gallery-grid{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:18px;
+  }
+  .gallery-item{
+    aspect-ratio:1/1;
+    border-radius:16px;
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    position:relative;
+    overflow:hidden;
+    cursor:pointer;
+    background:linear-gradient(135deg,#1c1c1c,#3d3d3d);
+  }
+  .gallery-item img{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    transition:transform .5s ease, filter .5s ease;
+    filter:grayscale(15%);
+  }
+  .gallery-item:hover img{ transform:scale(1.1); filter:grayscale(0%); }
+  .gallery-item::before{
+    content:"";
+    position:absolute; inset:0;
+    background:linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,.75) 100%);
+    transition:opacity .35s ease;
+  }
+  .gallery-item span{
+    position:relative; z-index:2;
+    width:100%;
+    padding:16px;
+    color:var(--text-light);
+    font-size:14px;
+    font-weight:600;
+    text-align:center;
+    letter-spacing:.5px;
+    transform:translateY(6px);
+    transition:transform .35s ease;
+  }
+  .gallery-item:hover span{ transform:translateY(0); }
+
+  /* ---------- testimonios ---------- */
+  .testimonials{ padding:100px 0; background:var(--cream); }
+  .test-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:26px;
+  }
+  .test-card{
+    background:#fff;
+    border-radius:18px;
+    padding:30px 26px;
+    box-shadow:0 12px 30px -18px rgba(0,0,0,.12);
+    position:relative;
+  }
+  .test-card .quote-mark{
+    font-family:'Playfair Display',serif;
+    font-size:52px;
+    color:var(--gold);
+    line-height:1;
+    margin-bottom:8px;
+    display:block;
+  }
+  .test-card p{ font-size:14.5px; color:#555; line-height:1.75; margin-bottom:20px; }
+  .test-person{ display:flex; align-items:center; gap:12px; }
+  .test-avatar{
+    width:44px; height:44px; border-radius:50%;
+    background:linear-gradient(135deg, var(--gold-light), var(--gold-dark));
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; color:var(--black); font-size:15px;
+  }
+  .test-person strong{ display:block; font-size:14px; color:var(--black); }
+  .test-person .stars{ font-size:12px; }
+
+  /* ---------- horario + contacto ---------- */
+  .info{ padding:100px 0; background:var(--charcoal); color:var(--text-light); }
+  .info-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:50px;
+  }
+  .info-card{
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:20px;
+    padding:34px;
+  }
+  .info-card h3{
+    font-size:22px;
+    margin-bottom:22px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .schedule-row{
+    display:flex; justify-content:space-between;
+    padding:12px 0;
+    border-bottom:1px solid rgba(255,255,255,.08);
+    font-size:14.5px;
+  }
+  .schedule-row:last-child{ border-bottom:none; }
+  .schedule-row span:last-child{ color:var(--gold-light); font-weight:500; }
+  .contact-row{ display:flex; align-items:flex-start; gap:14px; margin-bottom:20px; font-size:14.5px; }
+  .contact-row .ic{
+    width:38px; height:38px; border-radius:10px;
+    background:linear-gradient(135deg, var(--gold-light), var(--gold-dark));
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; font-size:16px;
+  }
+  .contact-row a, .contact-row div{ color:#d9d4c8; line-height:1.6; }
+
+  /* ---------- footer ---------- */
+  footer{ background:var(--black); color:#9c968a; padding:60px 0 24px; }
+  .footer-grid{
+    display:grid;
+    grid-template-columns:1.4fr 1fr 1fr;
+    gap:40px;
+    padding-bottom:40px;
+    border-bottom:1px solid rgba(255,255,255,.08);
+  }
+  footer .logo-text{ color:var(--text-light); }
+  footer .logo-text span{ color:var(--gold-light); }
+  footer p{ font-size:13.5px; line-height:1.8; margin-top:14px; max-width:280px; }
+  footer h4{ color:var(--text-light); font-size:14px; margin-bottom:16px; letter-spacing:1px; text-transform:uppercase; }
+  footer ul{ list-style:none; display:grid; gap:10px; }
+  footer ul a{ font-size:13.5px; color:#9c968a; transition:.25s; }
+  footer ul a:hover{ color:var(--gold-light); }
+  .social-row{ display:flex; gap:10px; margin-top:16px; }
+  .social-row a{
+    width:36px; height:36px; border-radius:50%;
+    background:rgba(255,255,255,.06);
+    display:flex; align-items:center; justify-content:center;
+    transition:.25s;
+  }
+  .social-row a:hover{ background:var(--gold); color:var(--black); transform:translateY(-3px); }
+  .bottom-bar{
+    display:flex; justify-content:space-between; align-items:center;
+    padding-top:22px; font-size:12.5px; flex-wrap:wrap; gap:10px;
+  }
+
+  /* ---------- floating whatsapp + back to top ---------- */
+  .float-actions{
+    position:fixed;
+    right:22px; bottom:22px;
+    display:flex; flex-direction:column; gap:14px;
+    z-index:900;
+  }
+  .fab{
+    width:54px; height:54px;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:22px;
+    cursor:pointer;
+    box-shadow:0 10px 25px -8px rgba(0,0,0,.4);
+    transition:transform .25s ease;
+    border:none;
+  }
+  .fab:hover{ transform:translateY(-4px) scale(1.05); }
+  .fab-whats{ background:#25d366; color:#fff; }
+  .fab-top{
+    background:var(--cream);
+    color:var(--black);
+    opacity:0; pointer-events:none;
+    transition:opacity .3s ease, transform .25s ease;
+  }
+  .fab-top.show{ opacity:1; pointer-events:auto; }
+
+  /* count up numbers reused style already above */
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 980px){
+    .hero-grid{ grid-template-columns:1fr; text-align:left; }
+    .hero-visual{ height:340px; margin-top:20px; }
+    .pole-frame{ width:150px; height:300px; }
+    .pole{ width:110px; height:270px; }
+    .about-grid{ grid-template-columns:1fr; }
+    .service-grid{ grid-template-columns:repeat(2,1fr); }
+    .gallery-grid{ grid-template-columns:repeat(2,1fr); }
+    .test-grid{ grid-template-columns:1fr; }
+    .info-grid{ grid-template-columns:1fr; }
+    .footer-grid{ grid-template-columns:1fr 1fr; }
+  }
+
+  @media (max-width: 760px){
+    .nav-links{ display:none; }
+    .nav-cta .btn-outline{ display:none; }
+    .burger{ display:flex; }
+    .hero{ padding-top:90px; }
+    .hero-stats{ gap:22px; }
+    .float-badge{ display:none; }
+    .service-grid{ grid-template-columns:1fr; }
+    .footer-grid{ grid-template-columns:1fr; }
+  }
+
+  @media (max-width: 480px){
+    .gallery-grid{ grid-template-columns:repeat(2,1fr); gap:12px; }
+    .section-title{ font-size:26px; }
+    .hero-btns .btn{ padding:12px 22px; font-size:14px; }
+  }
+
+</style>
+</head>
+<body>
+
+  <!-- ===================== HEADER ===================== -->
+  <header id="site-header">
+    <div class="navbar">
+      <div class="logo">
+        <div class="logo-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#101012" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="6" cy="6" r="2.6"/><circle cx="6" cy="18" r="2.6"/>
+            <line x1="20" y1="4" x2="8.2" y2="15.8"/><line x1="8.2" y1="8.2" x2="20" y2="20"/>
+          </svg>
+        </div>
+        <div class="logo-text">Barbería El Rayo de Oro<span>Cortes desde 1998</span></div>
+      </div>
+
+      <ul class="nav-links">
+        <li><a href="#inicio">Inicio</a></li>
+        <li><a href="#nosotros">Nosotros</a></li>
+        <li><a href="#servicios">Servicios</a></li>
+        <li><a href="#galeria">Galería</a></li>
+        <li><a href="#testimonios">Testimonios</a></li>
+        <li><a href="#contacto">Contacto</a></li>
+      </ul>
+
+      <div class="nav-cta">
+        <a href="#contacto" class="btn btn-gold">Reservar Cita</a>
+        <button class="burger" id="burger" aria-label="Abrir menú">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+    <div class="mobile-menu" id="mobile-menu">
+      <a href="#inicio">Inicio</a>
+      <a href="#nosotros">Nosotros</a>
+      <a href="#servicios">Servicios</a>
+      <a href="#galeria">Galería</a>
+      <a href="#testimonios">Testimonios</a>
+      <a href="#contacto">Contacto</a>
+    </div>
+  </header>
+
+  <!-- ===================== HERO ===================== -->
+  <section class="hero" id="inicio">
+    <div class="container hero-grid">
+      <div>
+        <div class="hero-eyebrow">Barbería Premium desde 1998</div>
+        <h1>Cortes que <em>Brillan</em><br> como el Oro</h1>
+        <p>Más de 20 años de experiencia cuidando el estilo de nuestros clientes. Cortes clásicos, barbas perfectas y afeitados a navaja en un ambiente cálido y profesional.</p>
+        <div class="hero-btns">
+          <a href="#servicios" class="btn btn-gold">Ver Servicios</a>
+          <a href="#contacto" class="btn btn-outline">Contáctanos</a>
+        </div>
+        <div class="hero-stats">
+          <div><strong class="counter" data-target="25">0</strong><span>Años de Experiencia</span></div>
+          <div><strong class="counter" data-target="5000">0</strong><span>Clientes Felices</span></div>
+          <div><strong class="counter" data-target="49" data-decimal="1">0</strong><span>Calificación (de 5)</span></div>
+        </div>
+      </div>
+
+      <div class="hero-visual">
+        <div class="float-badge b1"><span class="dot"></span> Disponible hoy</div>
+        <div class="float-badge b2">⭐ 4.9 · +300 reseñas</div>
+        <div class="pole-frame">
+          <div class="pole-cap top"></div>
+          <div class="pole">
+            <div class="pole-stripes"></div>
+          </div>
+          <div class="pole-cap bottom"></div>
+        </div>
+      </div>
+    </div>
+    <div class="scroll-cue"><span>Desliza</span><span class="line"></span></div>
+  </section>
+
+  <!-- ===================== NOSOTROS ===================== -->
+  <section class="about" id="nosotros">
+    <div class="container about-grid">
+      <div class="about-visual reveal">
+        <span class="icon-big">💈</span>
+        <div class="about-card-float">
+          <div class="stars">★★★★★</div>
+          <div>
+            <strong>4.9 / 5.0</strong>
+            <span>Basado en +300 reseñas</span>
+          </div>
+        </div>
+      </div>
+      <div class="about-text reveal">
+        <span class="section-label">Nuestra Historia</span>
+        <h2 class="section-title">Bienvenido a Barbería El Rayo de Oro</h2>
+        <p>Desde 1998 ofrecemos los mejores cortes de la ciudad. Nuestros barberos cuentan con más de 20 años de experiencia perfeccionando cada estilo, desde los cortes clásicos hasta las tendencias más actuales.</p>
+        <p>Somos la barbería de confianza recomendada de generación en generación, un espacio donde la tradición se combina con técnica y atención personalizada.</p>
+        <ul class="checklist">
+          <li><span class="check">✓</span> Barberos certificados con más de 20 años de experiencia</li>
+          <li><span class="check">✓</span> Productos y herramientas de primera calidad</li>
+          <li><span class="check">✓</span> Ambiente cómodo, limpio y profesional</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== SERVICIOS ===================== -->
+  <section class="services" id="servicios">
+    <div class="container center">
+      <span class="section-label">Lo que ofrecemos</span>
+      <h2 class="section-title">Nuestros Servicios</h2>
+      <p class="section-sub">Cada servicio está pensado para que salgas sintiéndote renovado, con la atención al detalle que nos caracteriza desde 1998.</p>
+    </div>
+    <div class="container service-grid">
+      <div class="service-card reveal">
+        <div class="icon-wrap">✂️</div>
+        <h3>Corte Clásico</h3>
+        <p>El corte de siempre, con la técnica precisa que nunca falla.</p>
+        <div class="price">$8<span>/sesión</span></div>
+      </div>
+      <div class="service-card featured reveal">
+        <div class="ribbon">Popular</div>
+        <div class="icon-wrap">💈</div>
+        <h3>Corte + Barba</h3>
+        <p>Nuestro combo más pedido: corte a la medida y arreglo de barba.</p>
+        <div class="price">$12<span>/sesión</span></div>
+      </div>
+      <div class="service-card reveal">
+        <div class="icon-wrap">🪒</div>
+        <h3>Afeitado a Navaja</h3>
+        <p>Afeitado tradicional con toalla caliente incluida.</p>
+        <div class="price">$10<span>/sesión</span></div>
+      </div>
+      <div class="service-card reveal">
+        <div class="icon-wrap">🎨</div>
+        <h3>Tinte</h3>
+        <p>Color natural y uniforme para verte más joven y fresco.</p>
+        <div class="price">$15<span>/sesión</span></div>
+      </div>
+      <div class="service-card reveal">
+        <div class="icon-wrap">🧒</div>
+        <h3>Corte Infantil</h3>
+        <p>Cortes divertidos y cómodos para los más pequeños.</p>
+        <div class="price">$6<span>/sesión</span></div>
+      </div>
+      <div class="service-card reveal">
+        <div class="icon-wrap">🧖‍♂️</div>
+        <h3>Tratamiento Facial</h3>
+        <p>Limpieza e hidratación facial para complementar tu corte.</p>
+        <div class="price">$9<span>/sesión</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== GALERIA ===================== -->
+  <section class="gallery" id="galeria">
+    <div class="container center">
+      <span class="section-label">Nuestro Trabajo</span>
+      <h2 class="section-title">Galería</h2>
+      <p class="section-sub" style="color:#c9c3b6;">Un vistazo al ambiente y el detalle que nos define.</p>
+    </div>
+    <div class="container gallery-grid">
+      <div class="gallery-item reveal">
+        <img src="https://images.unsplash.com/photo-1582771498000-8ad44e6c84db?q=80&w=800&auto=format&fit=crop" alt="Cliente recibiendo un corte de cabello en la barbería" loading="lazy">
+        <span>Corte Clásico</span>
+      </div>
+      <div class="gallery-item reveal">
+        <img src="https://images.unsplash.com/photo-1759134248487-e8baaf31e33e?q=80&w=800&auto=format&fit=crop" alt="Interior moderno de la barbería" loading="lazy">
+        <span>Nuestro Espacio</span>
+      </div>
+      <div class="gallery-item reveal">
+        <img src="https://images.unsplash.com/photo-1517832606299-7ae9b720a186?q=80&w=800&auto=format&fit=crop" alt="Barbero arreglando la barba de un cliente" loading="lazy">
+        <span>Arreglo de Barba</span>
+      </div>
+      <div class="gallery-item reveal">
+        <img src="https://images.unsplash.com/photo-1764712784236-7019d1565cb7?q=80&w=800&auto=format&fit=crop" alt="Navajas y brochas de afeitar sobre un estante" loading="lazy">
+        <span>Afeitado a Navaja</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TESTIMONIOS ===================== -->
+  <section class="testimonials" id="testimonios">
+    <div class="container center">
+      <span class="section-label">Clientes Felices</span>
+      <h2 class="section-title">Lo Que Dicen de Nosotros</h2>
+    </div>
+    <div class="container test-grid">
+      <div class="test-card reveal">
+        <span class="quote-mark">“</span>
+        <p>Me cortaron el cabello y salí como nuevo. La atención y el detalle son excelentes, totalmente recomendado.</p>
+        <div class="test-person">
+          <div class="test-avatar">R</div>
+          <div><strong>Roberto G.</strong><div class="stars">★★★★★</div></div>
+        </div>
+      </div>
+      <div class="test-card reveal">
+        <span class="quote-mark">“</span>
+        <p>La mejor barbería de todo el barrio. Ambiente agradable y barberos muy profesionales.</p>
+        <div class="test-person">
+          <div class="test-avatar">M</div>
+          <div><strong>Martín P.</strong><div class="stars">★★★★★</div></div>
+        </div>
+      </div>
+      <div class="test-card reveal">
+        <span class="quote-mark">“</span>
+        <p>Fui por un corte y me quedé por la buena atención. Ahora soy cliente fijo, siempre vuelvo.</p>
+        <div class="test-person">
+          <div class="test-avatar">C</div>
+          <div><strong>Don Chucho</strong><div class="stars">★★★★★</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== HORARIO + CONTACTO ===================== -->
+  <section class="info" id="contacto">
+    <div class="container">
+      <div class="center" style="margin-bottom:50px;">
+        <span class="section-label">Visítanos</span>
+        <h2 class="section-title" style="color:var(--text-light);">Horario y Contacto</h2>
+      </div>
+      <div class="info-grid">
+        <div class="info-card reveal">
+          <h3>🕒 Horario de Atención</h3>
+          <div class="schedule-row"><span>Lunes – Viernes</span><span>9:00 am – 7:00 pm</span></div>
+          <div class="schedule-row"><span>Sábado</span><span>9:00 am – 5:00 pm</span></div>
+          <div class="schedule-row"><span>Domingo</span><span>Cerrado</span></div>
+        </div>
+        <div class="info-card reveal">
+          <h3>📍 Contáctanos</h3>
+          <div class="contact-row">
+            <div class="ic">📍</div>
+            <div>Calle Falsa 123, entre la panadería y el semáforo<br>Centro de la ciudad</div>
+          </div>
+          <div class="contact-row">
+            <div class="ic">📞</div>
+            <div><a href="tel:+15551234567">(555) 123-4567</a></div>
+          </div>
+          <div class="contact-row">
+            <div class="ic">✉️</div>
+            <div><a href="mailto:contacto@elrayodeoro.com">contacto@elrayodeoro.com</a></div>
+          </div>
+          <a href="#" class="btn btn-gold" style="margin-top:10px;">Reservar por WhatsApp</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== FOOTER ===================== -->
+  <footer>
+    <div class="container footer-grid">
+      <div>
+        <div class="logo">
+          <div class="logo-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#101012" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="6" cy="6" r="2.6"/><circle cx="6" cy="18" r="2.6"/>
+              <line x1="20" y1="4" x2="8.2" y2="15.8"/><line x1="8.2" y1="8.2" x2="20" y2="20"/>
+            </svg>
+          </div>
+          <div class="logo-text">Barbería El Rayo de Oro<span>Cortes desde 1998</span></div>
+        </div>
+        <p>Más de 20 años ofreciendo cortes de calidad, con la dedicación y el detalle que nuestros clientes merecen.</p>
+        <div class="social-row">
+          <a href="#" aria-label="Instagram">📷</a>
+          <a href="#" aria-label="Facebook">📘</a>
+          <a href="#" aria-label="WhatsApp">💬</a>
+        </div>
+      </div>
+      <div>
+        <h4>Navegación</h4>
+        <ul>
+          <li><a href="#inicio">Inicio</a></li>
+          <li><a href="#nosotros">Nosotros</a></li>
+          <li><a href="#servicios">Servicios</a></li>
+          <li><a href="#testimonios">Testimonios</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Contacto</h4>
+        <ul>
+          <li>Calle Falsa 123</li>
+          <li>(555) 123-4567</li>
+          <li>contacto@elrayodeoro.com</li>
+        </ul>
+      </div>
+    </div>
+    <div class="container bottom-bar">
+      <span>© 2026 Barbería El Rayo de Oro. Todos los derechos reservados.</span>
+      <span>Hecho con dedicación para nuestros clientes.</span>
+    </div>
+  </footer>
+
+  <!-- ===================== FLOATING ACTIONS ===================== -->
+  <div class="float-actions">
+    <button class="fab fab-top" id="toTop" aria-label="Subir">↑</button>
+    <a class="fab fab-whats" href="#" aria-label="WhatsApp">
+      <svg viewBox="0 0 32 32" width="26" height="26" fill="currentColor" aria-hidden="true">
+        <path d="M16.004 3C9.377 3 4 8.373 4 15c0 2.446.71 4.72 1.94 6.63L4 29l7.59-1.9A11.94 11.94 0 0 0 16.004 27C22.63 27 28 21.627 28 15S22.63 3 16.004 3zm0 21.8c-1.94 0-3.75-.52-5.31-1.43l-.38-.22-4.5 1.13 1.2-4.39-.25-.4A9.77 9.77 0 0 1 5.2 15c0-5.96 4.84-10.8 10.8-10.8S26.8 9.04 26.8 15 21.964 24.8 16.004 24.8zm5.98-8.1c-.33-.16-1.94-.96-2.24-1.07-.3-.11-.52-.16-.74.16-.22.32-.85 1.07-1.04 1.29-.19.22-.38.24-.7.08-.32-.16-1.36-.5-2.59-1.6-.96-.86-1.6-1.92-1.79-2.24-.19-.32-.02-.49.15-.65.15-.14.34-.37.51-.55.17-.19.22-.32.34-.54.11-.22.06-.4-.03-.56-.08-.16-.7-1.69-.96-2.31-.25-.6-.51-.52-.7-.53h-.6c-.19 0-.5.07-.77.35-.27.29-1.03 1.01-1.03 2.46 0 1.46 1.06 2.86 1.2 3.06.15.19 2.06 3.15 5.02 4.29 2.96 1.14 2.96.76 3.5.71.54-.05 1.75-.72 2-1.41.25-.7.25-1.29.17-1.41-.07-.13-.27-.2-.6-.36z"/>
+      </svg>
+    </a>
+  </div>
+
+<script>
+  // header scroll shadow
+  var header = document.getElementById('site-header');
+  var toTop = document.getElementById('toTop');
+  window.addEventListener('scroll', function(){
+    header.classList.toggle('scrolled', window.scrollY > 10);
+    toTop.classList.toggle('show', window.scrollY > 400);
+  });
+
+  toTop.addEventListener('click', function(){
+    window.scrollTo({ top:0, behavior:'smooth' });
+  });
+
+  // mobile menu
+  var burger = document.getElementById('burger');
+  var mobileMenu = document.getElementById('mobile-menu');
+  burger.addEventListener('click', function(){
+    mobileMenu.classList.toggle('open');
+  });
+  mobileMenu.querySelectorAll('a').forEach(function(a){
+    a.addEventListener('click', function(){ mobileMenu.classList.remove('open'); });
+  });
+
+  // reveal on scroll
+  var revealEls = document.querySelectorAll('.reveal');
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if (entry.isIntersecting){
+        entry.target.classList.add('in');
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold:0.15 });
+  revealEls.forEach(function(el){ io.observe(el); });
+
+  // animated counters
+  var counters = document.querySelectorAll('.counter');
+  var counted = false;
+  function runCounters(){
+    if (counted) return;
+    counted = true;
+    counters.forEach(function(el){
+      var target = parseFloat(el.getAttribute('data-target'));
+      var decimals = parseInt(el.getAttribute('data-decimal') || '0', 10);
+      var divisor = decimals ? Math.pow(10, decimals) : 1;
+      var current = 0;
+      var step = target / 60;
+      var tick = setInterval(function(){
+        current += step;
+        if (current >= target){ current = target; clearInterval(tick); }
+        el.textContent = (current / divisor).toFixed(decimals) + (divisor > 1 ? '' : (target >= 1000 ? '+' : (el === counters[0] ? '+' : '')));
+      }, 20);
+    });
+  }
+  var heroStatsEl = document.querySelector('.hero-stats');
+  if (heroStatsEl){
+    var io2 = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if (entry.isIntersecting){ runCounters(); io2.disconnect(); }
+      });
+    }, { threshold:0.3 });
+    io2.observe(heroStatsEl);
+  }
+</script>
+
+</body>
+</html>

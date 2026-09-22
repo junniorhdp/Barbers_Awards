@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@theme {
+  --color-carbon: #0F0F0F;
+  --color-night: #18181B;
+  --color-gold: #D4AF37;
+  --color-gold-amber: #F59E0B;
+  --color-violet: #7C3AED;
+  --color-violet-neon: #A855F7;
+  --color-muted: #A1A1AA;
+  --color-ink: #FAFAFA;
+  --color-line: #27272A;
+  --color-silver: #D4D4D8;
+
+  --shadow-glow-violet: 0 0 24px rgb(168 85 247 / 0.35);
+  --shadow-glow-gold: 0 0 20px rgb(212 175 55 / 0.25);
+}
+
+body { background: var(--color-carbon); color: var(--color-ink); }
