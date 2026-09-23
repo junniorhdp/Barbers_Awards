@@ -41,4 +41,15 @@ docs/USE_CASES.md, docs/ARCHITECTURE.md, docs/SCHEMA.sql, docs/HISTORIAS_USUARIO
   memoria (`lib/rate-limit.ts`), sin Upstash todavía. Es best-effort (se
   reinicia en cada arranque en frío); reemplazar por Upstash Ratelimit si el
   tráfico del piloto lo justifica. Ver ARCHITECTURE.md 4.2.5.
+- Decisión abierta 5 resuelta (Fase 6, 2026-09-22): `barberias.estado_postulacion`
+  (SCHEMA.sql v1.5) distingue "pendiente de revisión" de "aprobada" y
+  "rechazada". Las barberías creadas ANTES de esta migración también nacen en
+  `estado_postulacion = 'pendiente'` a propósito (decisión explícita del
+  usuario: no se aprobaron en bloque) — hay que aprobarlas una por una desde
+  `/admin/postulaciones`, igual que cualquier barbería nueva.
+- Nivel de sello limitado a Gold/Silver (Fase 6, 2026-09-22): `catalogo_sellos.nivel`
+  es texto libre en el esquema, pero `barberias.estado_sello_check` solo
+  acepta `gold`/`silver`/`pendiente`/`inactivo`. El formulario de
+  `/admin/sellos` restringe el selector de `nivel` a esos dos valores; agregar
+  un nivel nuevo requiere una migración aparte que amplíe ese CHECK.
 - (agrega aquí cada decisión nueva que cierres, con fecha)

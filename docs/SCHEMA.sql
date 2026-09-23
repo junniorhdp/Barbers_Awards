@@ -1,5 +1,5 @@
 -- =============================================================================
--- BARBERS AWARD  ·  SCHEMA.sql  (MVP v1.4)
+-- BARBERS AWARD  ·  SCHEMA.sql  (MVP v1.5)
 -- Base de datos: Supabase (PostgreSQL + Auth + Storage)
 --
 -- Cómo aplicarlo:
@@ -46,6 +46,14 @@
 -- (trg_leads_guard_columns). La sección 9 corrige leads_guard_only_conversion()
 -- para permitir específicamente ese caso (cupon_id -> NULL), sin abrir ninguna
 -- otra columna protegida.
+--
+-- Cambios de la v1.5 respecto a la v1.4 (Fase 6, ver sección 10 al final del
+-- archivo): nuevas columnas barberias.estado_postulacion y motivo_rechazo
+-- (CU-17), resolviendo la decisión abierta 5 de ARCHITECTURE.md. Antes,
+-- estado_sello = 'pendiente' significaba a la vez "recién registrada, sin
+-- revisar" y "aprobada pero sin sello Gold/Silver todavía", así que toda
+-- barbería nueva quedaba pública sin que el staff la revisara. Ahora
+-- barberias_select_public exige también estado_postulacion = 'aprobada'.
 -- =============================================================================
 
 begin;
@@ -840,6 +848,102 @@ begin
      or new.creado_en is distinct from old.creado_en
   then
     raise exception 'El dueño solo puede modificar conversion_exitosa de un lead.'
+      using errcode = '42501';
+  end if;
+
+  return new;
+end;
+$$;
+
+commit;
+
+
+-- =============================================================================
+-- 10. MIGRACIÓN v1.5 — estado_postulacion (CU-17, decisión abierta 5 de
+--     ARCHITECTURE.md)
+--
+--     Hasta la v1.4, barberias.estado_sello (pendiente/gold/silver/inactivo)
+--     era la única señal de estado, y 'pendiente' significa a la vez "recién
+--     registrada, sin revisar" y "aprobada pero sin sello Gold/Silver todavía"
+--     — no había manera de distinguirlos. Consecuencia real: toda barbería
+--     nueva (CU-07) queda pública de inmediato en /directorio y la landing,
+--     sin que el staff la revise nunca (CU-17 no se podía construir de
+--     verdad). Esta migración separa ambas cosas:
+--
+--       · estado_postulacion ('pendiente' | 'aprobada' | 'rechazada'): la
+--         revisión de staff (CU-17). Nace en 'pendiente' para toda barbería,
+--         nueva o existente — a propósito: las barberías creadas antes de
+--         esta migración también deben pasar por /admin/postulaciones.
+--       · estado_sello sigue siendo la certificación (CU-18), sin cambios en
+--         su propio CHECK ni en sus valores.
+--
+--     barberias_select_public ahora exige AMBAS: estado_sello <> 'inactivo'
+--     Y estado_postulacion = 'aprobada'. Una barbería con estado_postulacion
+--     = 'aprobada' y estado_sello = 'pendiente' sigue viéndose como "En
+--     Verificación" (CU-02) — aprobar la postulación no emite un sello, eso
+--     sigue siendo un acto aparte del staff en CU-18, como ya aclaraba CU-17.
+--
+--     No se modifica la definición original de barberias_guard_privileged_
+--     columns() de la sección 4.2: esta es la versión que queda activa al
+--     final, extendida para forzar/bloquear también estado_postulacion y
+--     motivo_rechazo exactamente igual que las demás columnas privilegiadas.
+-- =============================================================================
+
+begin;
+
+alter table public.barberias
+  add column if not exists estado_postulacion text not null default 'pendiente';
+alter table public.barberias
+  add column if not exists motivo_rechazo text;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'barberias_estado_postulacion_check'
+  ) then
+    alter table public.barberias
+      add constraint barberias_estado_postulacion_check
+      check (estado_postulacion in ('pendiente', 'aprobada', 'rechazada'));
+  end if;
+end
+$$;
+
+create index if not exists idx_barberias_estado_postulacion
+  on public.barberias (estado_postulacion);
+
+drop policy if exists barberias_select_public on public.barberias;
+create policy barberias_select_public on public.barberias
+  for select to anon, authenticated
+  using (estado_sello <> 'inactivo' and estado_postulacion = 'aprobada');
+
+create or replace function public.barberias_guard_privileged_columns()
+returns trigger language plpgsql set search_path = '' as $$
+begin
+  if auth.uid() is null or public.is_admin() then
+    return new;
+  end if;
+
+  if tg_op = 'INSERT' then
+    new.estado_sello                     := 'pendiente';
+    new.estado_suscripcion               := 'prueba';
+    new.fecha_inicio_suscripcion         := null;
+    new.fecha_vencimiento_suscripcion    := null;
+    new.plan_tipo                        := null;
+    new.estado_postulacion               := 'pendiente';
+    new.motivo_rechazo                   := null;
+    return new;
+  end if;
+
+  if new.owner_id is distinct from old.owner_id
+     or new.estado_sello is distinct from old.estado_sello
+     or new.estado_suscripcion is distinct from old.estado_suscripcion
+     or new.fecha_inicio_suscripcion is distinct from old.fecha_inicio_suscripcion
+     or new.fecha_vencimiento_suscripcion is distinct from old.fecha_vencimiento_suscripcion
+     or new.plan_tipo is distinct from old.plan_tipo
+     or new.estado_postulacion is distinct from old.estado_postulacion
+     or new.motivo_rechazo is distinct from old.motivo_rechazo
+  then
+    raise exception 'No tienes permiso para modificar owner, sello, suscripción, plan o postulación.'
       using errcode = '42501';
   end if;
 

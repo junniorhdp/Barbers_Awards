@@ -333,6 +333,7 @@ barbers-awards/
 │   │   │   ├── login/page.tsx           # público: sin layout de rol por encima
 │   │   │   └── (protected)/
 │   │   │       ├── layout.tsx           # verifica rol administrator
+│   │   │       ├── actions.ts           # Server Actions de CU-17, CU-18 y CU-19
 │   │   │       ├── page.tsx             # métricas globales
 │   │   │       ├── postulaciones/page.tsx
 │   │   │       ├── certificaciones/page.tsx
@@ -353,6 +354,8 @@ barbers-awards/
 │   │   ├── horarios.ts                  # esquema zod, agrupación y "abierto ahora"
 │   │   ├── storage.ts                   # URL pública de un objeto del bucket
 │   │   ├── color.ts                     # utilidades de contraste para SealBadge
+│   │   ├── rate-limit.ts                # límite de frecuencia en memoria de /api/leads (Fase 5)
+│   │   ├── folio.ts                     # generarFolio() (CU-18)
 │   │   └── validators.ts                # esquemas zod (incluye SERVICIO_ICONOS_SUGERIDOS)
 │   ├── types/database.ts                # generado con supabase gen types
 │   └── proxy.ts                         # middleware.ts en Next.js < 16
@@ -1034,7 +1037,7 @@ Vercel verifica esos registros y emite el certificado SSL automáticamente; no h
 
 ## 7. Decisiones abiertas y pendientes
 
-Puntos donde los casos de uso o el esquema aún no definen todo lo que la aplicación necesita. Las filas 1, 3, 4 y 11 quedaron resueltas y se conservan por trazabilidad; la 2 quedó resuelta solo en parte.
+Puntos donde los casos de uso o el esquema aún no definen todo lo que la aplicación necesita. Las filas 1, 3, 4, 5 y 11 quedaron resueltas y se conservan por trazabilidad; la 2 quedó resuelta solo en parte.
 
 | # | Tema | Situación actual | Propuesta |
 | --- | --- | --- | --- |
@@ -1042,7 +1045,7 @@ Puntos donde los casos de uso o el esquema aún no definen todo lo que la aplica
 | 2 | Visitas y cupones copiados (CU-15) | **Parcialmente resuelto en v1.3.** El registro real del lead y la ambigüedad "copiado" vs. "redimido" quedan resueltas: `leads_whatsapp` ya guarda cada reserva con nombre y teléfono, y `conversion_exitosa` distingue con precisión un cupón efectivamente redimido en el local (CU-14) de uno solo copiado. Lo que sigue sin resolver es la mitad de "Visitas": no existe ninguna tabla que registre vistas de página, solo leads con intención de reserva | Si se necesita medir tráfico puro (no solo intención de reserva), agregar una tabla de eventos de visita, separada de `leads_whatsapp` |
 | 3 | Vigencia de cupones (CU-13) | **Resuelto en v1.3.** `cupones_descuento.fecha_fin` ya existe. La política pública de RLS solo filtra por `es_activo`, así que la consulta del perfil (3.7) agrega el filtro de vigencia con `.or('fecha_fin.is.null,fecha_fin.gt.<ahora>')` | — |
 | 4 | Catálogo de sellos (CU-19) | **Resuelto en v1.3.** Tabla `catalogo_sellos`, referenciada desde `certificaciones.sello_id`, sembrada con Gold y Silver por defecto | — |
-| 5 | Aprobación de postulaciones (CU-17) | No se distingue "pendiente de revisión", "aprobada sin sello" y "rechazada" (solo existe `inactivo`) | Columna `estado_postulacion` |
+| 5 | Aprobación de postulaciones (CU-17) | **Resuelto en la Fase 6 (SCHEMA.sql v1.5).** | Columna `barberias.estado_postulacion` (`pendiente`/`aprobada`/`rechazada`) + `motivo_rechazo`. `barberias_select_public` ahora exige `estado_sello <> 'inactivo' AND estado_postulacion = 'aprobada'`: una barbería nueva ya no es pública hasta que el staff la aprueba en `/admin/postulaciones`. Aprobar no emite sello (eso sigue siendo CU-18) |
 | 6 | Referencia de Wompi | No se guarda; hoy va codificada en la referencia | Columna `wompi_reference` en `transacciones_pago` |
 | 7 | Efecto del pago sobre el sello (CU-12 y CU-18) | CU-12 dice "sello activado", CU-18 dice que el staff lo asigna | Recomendado: el pago activa la membresía; el sello depende de la auditoría del staff |
 | 8 | Suscripción vencida | No está definido qué ve el público | Sugerido: mantener el perfil y ocultar o marcar como no vigente el sello |

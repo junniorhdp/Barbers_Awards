@@ -168,3 +168,37 @@ export const CuponSchema = z
     message: "Un descuento por porcentaje no puede superar 100.",
     path: ["valorDescuento"],
   });
+
+// --- Fase 6: panel de administración (CU-17, CU-18, CU-19) --------------
+
+export const RechazoSchema = z.object({
+  motivoRechazo: opcional(300),
+});
+
+// CU-19: nivel limitado a Gold/Silver por ahora — es el único rango que
+// barberias.estado_sello_check acepta (ver la respuesta donde se aprobó esta
+// restricción); agregar más niveles necesita una migración aparte.
+export const NIVELES_SELLO = ["Gold", "Silver"] as const;
+
+export const SelloSchema = z.object({
+  nombreSello: z.string().trim().min(2, "Ingresa el nombre del sello.").max(60),
+  nivel: z.enum(NIVELES_SELLO, "Elige Gold o Silver."),
+  requisitos: opcional(2000),
+  entidadEmisora: z.string().trim().min(2, "Ingresa la entidad emisora.").max(120),
+  colorHex: z
+    .string()
+    .trim()
+    .transform((v) => (v === "" ? null : v))
+    .refine((v) => v === null || /^#[0-9a-fA-F]{6}$/.test(v), {
+      message: "El color debe ser un hex de 6 dígitos, ej. #D4AF37.",
+    }),
+});
+
+export const CertificacionSchema = z.object({
+  barberiaId: z.string().uuid("Elige una barbería válida."),
+  selloId: z.string().uuid("Elige un sello válido."),
+  fechaVencimiento: z
+    .string()
+    .trim()
+    .transform((v) => (v === "" ? null : new Date(v).toISOString())),
+});
