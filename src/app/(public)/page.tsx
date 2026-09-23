@@ -13,12 +13,19 @@ type BarberiaDestacada = {
   estado_sello: string;
 };
 
+type SeccionDestacadas = {
+  titulo: string;
+  barberias: BarberiaDestacada[];
+};
+
 // "Barberías destacadas" (CU-01): no existe una columna `destacado` en
 // barberias. Regla aprobada: primero las Gold/Silver más recientemente
-// certificadas; si todavía no hay ninguna (probable el día 1 del piloto),
-// se completa con las más nuevas activas para que la sección nunca quede
-// vacía en el lanzamiento.
-async function obtenerDestacadas(): Promise<BarberiaDestacada[]> {
+// certificadas ("Barberías Destacadas"); si todavía no hay ninguna (probable
+// el día 1 del piloto), se completa con las más nuevas activas, pero bajo un
+// título distinto ("Recién llegadas a la plataforma") — 'pendiente' significa
+// sin auditar por el staff (CU-17), y llamarlas "destacadas" insinuaría una
+// certificación que no existe.
+async function obtenerDestacadas(): Promise<SeccionDestacadas> {
   const supabase = createClient();
 
   const { data: certificadas } = await supabase
@@ -32,7 +39,9 @@ async function obtenerDestacadas(): Promise<BarberiaDestacada[]> {
     .map((c) => c.barberias as unknown as BarberiaDestacada | null)
     .filter((b): b is BarberiaDestacada => b !== null);
 
-  if (destacadas.length > 0) return destacadas;
+  if (destacadas.length > 0) {
+    return { titulo: "Barberías destacadas", barberias: destacadas };
+  }
 
   const { data: recientes } = await supabase
     .from("barberias")
@@ -41,11 +50,11 @@ async function obtenerDestacadas(): Promise<BarberiaDestacada[]> {
     .order("created_at", { ascending: false })
     .limit(6);
 
-  return recientes ?? [];
+  return { titulo: "Recién llegadas a la plataforma", barberias: recientes ?? [] };
 }
 
 export default async function HomePage() {
-  const destacadas = await obtenerDestacadas();
+  const { titulo, barberias: destacadas } = await obtenerDestacadas();
 
   return (
     <>
@@ -98,7 +107,7 @@ export default async function HomePage() {
 
       {destacadas.length > 0 ? (
         <section className="mx-auto max-w-6xl px-8 pb-20">
-          <h2 className="mb-8 text-center text-2xl font-semibold text-gold">Barberías destacadas</h2>
+          <h2 className="mb-8 text-center text-2xl font-semibold text-gold">{titulo}</h2>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {destacadas.map((barberia) => (
               <BarberiaCard key={barberia.id} barberia={barberia} />
