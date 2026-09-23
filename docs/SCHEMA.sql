@@ -1,5 +1,5 @@
 -- =============================================================================
--- BARBERS AWARD  ·  SCHEMA.sql  (MVP v1.3)
+-- BARBERS AWARD  ·  SCHEMA.sql  (MVP v1.4)
 -- Base de datos: Supabase (PostgreSQL + Auth + Storage)
 --
 -- Cómo aplicarlo:
@@ -36,6 +36,16 @@
 --   · Nueva función pública cupon_ya_usado(telefono, cupon_id) para avisarle al
 --     visitante ANTES de reservar, sin exponer la tabla de leads (que es privada
 --     del dueño).
+--
+-- Cambios de la v1.4 respecto a la v1.3 (corrección, ver sección 9 al final del
+-- archivo): eliminar un cupón con leads asociados fallaba con el error 'El dueño
+-- solo puede modificar conversion_exitosa de un lead.' — leads_whatsapp.cupon_id
+-- tiene on delete set null, así que borrar el cupón dispara una actualización en
+-- cascada de cupon_id a NULL en cada lead que lo referencia, y esa actualización
+-- caía en la misma regla que bloquea al dueño editar sus leads directamente
+-- (trg_leads_guard_columns). La sección 9 corrige leads_guard_only_conversion()
+-- para permitir específicamente ese caso (cupon_id -> NULL), sin abrir ninguna
+-- otra columna protegida.
 -- =============================================================================
 
 begin;
@@ -783,3 +793,58 @@ on conflict (lower(nombre_sello)) do nothing;
 --     Si el cupón de ese lead ya alcanzó su limite_usos, esta sentencia falla
 --     con el mensaje del trigger trg_leads_sync_cupon_usage ('Este cupón
 --     alcanzó su límite de N usos.'), sin modificar nada.
+
+
+-- =============================================================================
+-- 9. MIGRACIÓN v1.4 — CORRECCIÓN DE leads_guard_only_conversion()
+--    (aplicar sobre una base ya inicializada con v1.1–v1.3; en una base nueva,
+--    ejecutar el archivo completo de una sola vez ya deja esta versión activa,
+--    porque este create or replace corre después de la definición original de
+--    la sección 4.3).
+--
+--    Bug reportado en la Fase 5: al eliminar un cupón de cupones_descuento que
+--    ya tenía leads asociados, el DELETE fallaba con el error 'El dueño solo
+--    puede modificar conversion_exitosa de un lead.' — un error de la base de
+--    datos, no de la aplicación. Causa: leads_whatsapp.cupon_id se declaró
+--    'on delete set null' (sección 1), así que borrar el cupón obliga a
+--    Postgres a actualizar cupon_id = NULL en cada lead que lo referencia.
+--    Esa actualización en cascada disparaba trg_leads_guard_columns, el mismo
+--    trigger pensado para impedir que el dueño edite un lead más allá de
+--    conversion_exitosa (sección 4.3) — sin distinguir entre una edición
+--    directa del dueño y una consecuencia legítima del ON DELETE SET NULL.
+--
+--    Corrección: la única columna que ahora se exceptúa es cupon_id, y solo
+--    cuando el valor nuevo es NULL. El resto de columnas protegidas
+--    (barberia_id, nombre_cliente, telefono_cliente, servicio_id, barbero_id,
+--    creado_en) siguen bloqueadas exactamente igual que en la v1.3; tampoco se
+--    permite cambiar cupon_id a otro cupón distinto de NULL. No se modifica la
+--    definición original de la sección 4.3: esta es la versión que queda
+--    activa al final, por el create or replace function.
+-- =============================================================================
+
+begin;
+
+create or replace function public.leads_guard_only_conversion()
+returns trigger language plpgsql set search_path = '' as $$
+begin
+  if auth.uid() is null or public.is_admin() then
+    return new;
+  end if;
+
+  if new.barberia_id is distinct from old.barberia_id
+     or new.nombre_cliente is distinct from old.nombre_cliente
+     or new.telefono_cliente is distinct from old.telefono_cliente
+     or new.servicio_id is distinct from old.servicio_id
+     or new.barbero_id is distinct from old.barbero_id
+     or (new.cupon_id is distinct from old.cupon_id and new.cupon_id is not null)
+     or new.creado_en is distinct from old.creado_en
+  then
+    raise exception 'El dueño solo puede modificar conversion_exitosa de un lead.'
+      using errcode = '42501';
+  end if;
+
+  return new;
+end;
+$$;
+
+commit;

@@ -166,6 +166,7 @@ export function CuponesManager({ cuponesIniciales }: { cuponesIniciales: Cupon[]
   const router = useRouter();
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
+  const [errorEliminar, setErrorEliminar] = useState<string | null>(null);
 
   async function alternarActivo(cupon: Cupon) {
     await alternarActivoCupon(cupon.id, !cupon.es_activo);
@@ -173,8 +174,13 @@ export function CuponesManager({ cuponesIniciales }: { cuponesIniciales: Cupon[]
   }
 
   async function confirmarEliminar(cuponId: string) {
-    await eliminarCupon(cuponId);
+    const resultado = await eliminarCupon(cuponId);
+    if (resultado.error) {
+      setErrorEliminar(resultado.error);
+      return;
+    }
     setConfirmandoId(null);
+    setErrorEliminar(null);
     router.refresh();
   }
 
@@ -223,7 +229,10 @@ export function CuponesManager({ cuponesIniciales }: { cuponesIniciales: Cupon[]
                 </button>
                 <button
                   type="button"
-                  onClick={() => setConfirmandoId(cupon.id)}
+                  onClick={() => {
+                    setConfirmandoId(cupon.id);
+                    setErrorEliminar(null);
+                  }}
                   className="text-red-400 underline"
                 >
                   Eliminar
@@ -232,18 +241,28 @@ export function CuponesManager({ cuponesIniciales }: { cuponesIniciales: Cupon[]
             </div>
 
             {confirmandoId === cupon.id ? (
-              <div className="flex items-center gap-3 rounded border border-red-400/40 bg-carbon p-3 text-sm">
-                <span>¿Eliminar &quot;{cupon.codigo}&quot;? Esta acción no se puede deshacer.</span>
-                <button
-                  type="button"
-                  onClick={() => confirmarEliminar(cupon.id)}
-                  className="rounded bg-red-500 px-3 py-1 text-white"
-                >
-                  Sí, eliminar
-                </button>
-                <button type="button" onClick={() => setConfirmandoId(null)} className="text-muted">
-                  Cancelar
-                </button>
+              <div className="flex flex-col gap-2 rounded border border-red-400/40 bg-carbon p-3 text-sm">
+                <div className="flex items-center gap-3">
+                  <span>¿Eliminar &quot;{cupon.codigo}&quot;? Esta acción no se puede deshacer.</span>
+                  <button
+                    type="button"
+                    onClick={() => confirmarEliminar(cupon.id)}
+                    className="rounded bg-red-500 px-3 py-1 text-white"
+                  >
+                    Sí, eliminar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConfirmandoId(null);
+                      setErrorEliminar(null);
+                    }}
+                    className="text-muted"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+                {errorEliminar ? <p className="text-red-400">{errorEliminar}</p> : null}
               </div>
             ) : null}
 

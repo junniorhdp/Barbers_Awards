@@ -510,7 +510,7 @@ export async function eliminarCupon(cuponId: string): Promise<FormState> {
     .delete()
     .eq("id", cuponId)
     .eq("barberia_id", barberia.id);
-  if (error) return { error: "No se pudo eliminar el cupón." };
+  if (error) return { error: error.message || "No se pudo eliminar el cupón." };
 
   revalidarPerfil(barberia.slug, "/dashboard/cupones");
   return { success: true };
