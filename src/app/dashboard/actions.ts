@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { PerfilSchema, BarberoSchema, ServicioSchema } from "@/lib/validators";
+import { PerfilSchema, BarberoSchema, ServicioSchema, CuponSchema } from "@/lib/validators";
 
 export type FormState = { error?: string; success?: boolean };
 
@@ -403,6 +403,116 @@ export async function eliminarServicio(servicioId: string): Promise<FormState> {
   if (error) return { error: "No se pudo eliminar el servicio." };
 
   revalidarPerfil(barberia.slug, "/dashboard/servicios");
+  return { success: true };
+}
+
+// --- Cupones (CU-13) ----------------------------------------------------
+
+function errorCuponAmigable(error: { code?: string } | null): string {
+  if (error?.code === "23505") return "Ya existe un cupón con ese código.";
+  if (error?.code === "23514") return "El límite de usos no puede ser menor a las veces ya redimidas.";
+  return "No se pudo guardar el cupón.";
+}
+
+export async function crearCupon(_prevState: FormState, formData: FormData): Promise<FormState> {
+  const ctx = await contextoDueno();
+  if ("error" in ctx) return { error: ctx.error };
+  const { supabase, barberia } = ctx;
+
+  const parsed = CuponSchema.safeParse({
+    codigo: formData.get("codigo") ?? "",
+    descripcion: formData.get("descripcion") ?? "",
+    tipoDescuento: formData.get("tipoDescuento"),
+    valorDescuento: formData.get("valorDescuento") ?? "",
+    fechaFin: formData.get("fechaFin") ?? "",
+    limiteUsos: formData.get("limiteUsos") ?? "",
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Revisa los datos del formulario." };
+  }
+
+  const { error } = await supabase.from("cupones_descuento").insert({
+    barberia_id: barberia.id,
+    codigo: parsed.data.codigo,
+    descripcion: parsed.data.descripcion,
+    tipo_descuento: parsed.data.tipoDescuento,
+    valor_descuento: parsed.data.valorDescuento,
+    fecha_fin: parsed.data.fechaFin,
+    limite_usos: parsed.data.limiteUsos,
+  });
+  if (error) return { error: errorCuponAmigable(error) };
+
+  revalidarPerfil(barberia.slug, "/dashboard/cupones");
+  return { success: true };
+}
+
+export async function actualizarCupon(_prevState: FormState, formData: FormData): Promise<FormState> {
+  const ctx = await contextoDueno();
+  if ("error" in ctx) return { error: ctx.error };
+  const { supabase, barberia } = ctx;
+
+  const cuponId = formData.get("cuponId");
+  if (typeof cuponId !== "string") return { error: "Falta el cupón a editar." };
+
+  const parsed = CuponSchema.safeParse({
+    codigo: formData.get("codigo") ?? "",
+    descripcion: formData.get("descripcion") ?? "",
+    tipoDescuento: formData.get("tipoDescuento"),
+    valorDescuento: formData.get("valorDescuento") ?? "",
+    fechaFin: formData.get("fechaFin") ?? "",
+    limiteUsos: formData.get("limiteUsos") ?? "",
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Revisa los datos del formulario." };
+  }
+
+  const { error } = await supabase
+    .from("cupones_descuento")
+    .update({
+      codigo: parsed.data.codigo,
+      descripcion: parsed.data.descripcion,
+      tipo_descuento: parsed.data.tipoDescuento,
+      valor_descuento: parsed.data.valorDescuento,
+      fecha_fin: parsed.data.fechaFin,
+      limite_usos: parsed.data.limiteUsos,
+    })
+    .eq("id", cuponId)
+    .eq("barberia_id", barberia.id);
+  if (error) return { error: errorCuponAmigable(error) };
+
+  revalidarPerfil(barberia.slug, "/dashboard/cupones");
+  return { success: true };
+}
+
+export async function alternarActivoCupon(cuponId: string, activo: boolean): Promise<FormState> {
+  const ctx = await contextoDueno();
+  if ("error" in ctx) return { error: ctx.error };
+  const { supabase, barberia } = ctx;
+
+  const { error } = await supabase
+    .from("cupones_descuento")
+    .update({ es_activo: activo })
+    .eq("id", cuponId)
+    .eq("barberia_id", barberia.id);
+  if (error) return { error: "No se pudo actualizar el cupón." };
+
+  revalidarPerfil(barberia.slug, "/dashboard/cupones");
+  return { success: true };
+}
+
+export async function eliminarCupon(cuponId: string): Promise<FormState> {
+  const ctx = await contextoDueno();
+  if ("error" in ctx) return { error: ctx.error };
+  const { supabase, barberia } = ctx;
+
+  const { error } = await supabase
+    .from("cupones_descuento")
+    .delete()
+    .eq("id", cuponId)
+    .eq("barberia_id", barberia.id);
+  if (error) return { error: "No se pudo eliminar el cupón." };
+
+  revalidarPerfil(barberia.slug, "/dashboard/cupones");
   return { success: true };
 }
 

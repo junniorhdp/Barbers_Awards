@@ -14,6 +14,10 @@ import { OpenNowBadge } from "@/components/perfil/OpenNowBadge";
 import { HorarioList } from "@/components/perfil/HorarioList";
 import { ServiceCard } from "@/components/perfil/ServiceCard";
 import { TeamCard } from "@/components/perfil/TeamCard";
+import { CouponCard } from "@/components/perfil/CouponCard";
+import { BotonReservar } from "@/components/perfil/BotonReservar";
+import { WhatsAppBookingSheet } from "@/components/perfil/WhatsAppBookingSheet";
+import { ReservaProvider } from "@/components/perfil/ReservaContext";
 import { SealBadge } from "@/components/sellos/SealBadge";
 import "../perfil.css";
 
@@ -49,6 +53,16 @@ type Certificacion = {
   catalogo_sellos: { nombre_sello: string; nivel: string; color_hex: string | null } | null;
 };
 
+type Cupon = {
+  id: string;
+  codigo: string;
+  descripcion: string | null;
+  tipo_descuento: string;
+  valor_descuento: number;
+  veces_redimido: number;
+  limite_usos: number | null;
+};
+
 // El eslogan/nombre se resalta en la última palabra con el color de acento
 // (ARCHITECTURE.md 3.7, fila "Portada").
 function resaltarUltimaPalabra(texto: string) {
@@ -69,6 +83,7 @@ export default async function PerfilBarberiaPage({
 }) {
   const { id: slug } = await params;
   const supabase = createClient();
+  const ahoraISO = new Date().toISOString();
 
   const { data: b } = await supabase
     .from("barberias")
@@ -79,11 +94,13 @@ export default async function PerfilBarberiaPage({
       horarios, fotos, color_acento, logo_preset,
       servicios ( id, nombre, descripcion, precio, duracion_min, icono, destacado, orden ),
       barberos ( id, nombre, foto_avatar, experiencia_anos, especialidades, diplomas_urls ),
-      certificaciones ( folio_verificacion, estado, fecha_emision, fecha_vencimiento, catalogo_sellos ( nombre_sello, nivel, color_hex ) )
+      certificaciones ( folio_verificacion, estado, fecha_emision, fecha_vencimiento, catalogo_sellos ( nombre_sello, nivel, color_hex ) ),
+      cupones_descuento ( id, codigo, descripcion, tipo_descuento, valor_descuento, veces_redimido, limite_usos )
     `,
     )
     .eq("slug", slug)
     .order("orden", { referencedTable: "servicios", ascending: true })
+    .or(`fecha_fin.is.null,fecha_fin.gt.${ahoraISO}`, { referencedTable: "cupones_descuento" })
     .maybeSingle();
 
   if (!b) notFound();
@@ -95,6 +112,8 @@ export default async function PerfilBarberiaPage({
   const servicios = (b.servicios ?? []) as unknown as Servicio[];
   const barberos = (b.barberos ?? []) as unknown as Barbero[];
   const certificaciones = (b.certificaciones ?? []) as unknown as Certificacion[];
+  const cupones = (b.cupones_descuento ?? []) as unknown as Cupon[];
+  const puedeReservar = Boolean(b.telefono_whatsapp);
 
   const certificacionActiva = certificaciones.find((c) => c.estado === "activo") ?? null;
   const vencida = Boolean(
@@ -112,12 +131,13 @@ export default async function PerfilBarberiaPage({
 
   return (
     <div className={`perfil ${playfair.variable} ${poppins.variable}`} data-accent={acento}>
+      <ReservaProvider>
       <div className="perfil-franja">
         Parte del directorio{" "}
         <Link href="/directorio">Barbers Awards</Link>
       </div>
 
-      <PerfilHeader nombre={b.nombre} logoPreset={logoPreset} subtitulo={subtitulo} />
+      <PerfilHeader nombre={b.nombre} logoPreset={logoPreset} subtitulo={subtitulo} puedeReservar={puedeReservar} />
 
       {/* ===================== HERO ===================== */}
       <section className="hero" id="inicio">
@@ -240,6 +260,21 @@ export default async function PerfilBarberiaPage({
         </section>
       ) : null}
 
+      {/* ===================== CUPONES (CU-05) ===================== */}
+      {cupones.length > 0 ? (
+        <section className="coupons" id="cupones">
+          <div className="container center">
+            <span className="section-label">Promociones</span>
+            <h2 className="section-title">Cupones de descuento</h2>
+          </div>
+          <div className="container coupon-grid">
+            {cupones.map((cupon) => (
+              <CouponCard key={cupon.id} cupon={cupon} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       {/* ===================== EQUIPO (CU-03B) ===================== */}
       {barberos.length > 0 ? (
         <section className="team" id="equipo">
@@ -314,9 +349,15 @@ export default async function PerfilBarberiaPage({
                   <div>{b.telefono_whatsapp}</div>
                 </div>
               ) : null}
-              <button type="button" className="btn btn-gold" disabled aria-disabled style={{ marginTop: 10 }}>
-                Reservas por WhatsApp — próximamente
-              </button>
+              {puedeReservar ? (
+                <BotonReservar className="btn btn-gold" style={{ marginTop: 10 }}>
+                  Reservar por WhatsApp
+                </BotonReservar>
+              ) : (
+                <button type="button" className="btn btn-gold" disabled aria-disabled style={{ marginTop: 10 }}>
+                  Reservas por WhatsApp — no disponible
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -379,12 +420,29 @@ export default async function PerfilBarberiaPage({
 
       <div className="float-actions">
         <BackToTopButton />
-        <button type="button" className="fab fab-whats" disabled title="Reservas por WhatsApp — próximamente">
-          💬
-        </button>
+        {puedeReservar ? (
+          <BotonReservar className="fab fab-whats" title="Reservar por WhatsApp">
+            💬
+          </BotonReservar>
+        ) : (
+          <button type="button" className="fab fab-whats" disabled title="Sin WhatsApp configurado" style={{ background: "var(--muted, #a1a1aa)" }}>
+            💬
+          </button>
+        )}
       </div>
 
+      {puedeReservar ? (
+        <WhatsAppBookingSheet
+          barberiaId={b.id}
+          nombreBarberia={b.nombre}
+          telefonoBarberia={b.telefono_whatsapp!}
+          servicios={servicios.map((s) => ({ id: s.id, nombre: s.nombre }))}
+          barberos={barberos.map((barbero) => ({ id: barbero.id, nombre: barbero.nombre }))}
+        />
+      ) : null}
+
       <RevealInitializer />
+      </ReservaProvider>
     </div>
   );
 }

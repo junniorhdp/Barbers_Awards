@@ -37,4 +37,8 @@ docs/USE_CASES.md, docs/ARCHITECTURE.md, docs/SCHEMA.sql, docs/HISTORIAS_USUARIO
   si `signUpData.session` es null, muestra "revisa tu correo" en vez de
   redirigir a /dashboard. Si alguna vez se desactiva la confirmación en
   Supabase, ese código adaptativo sigue funcionando igual (redirige directo).
+- Límite de frecuencia de `/api/leads` (Fase 5, 2026-09-22): contador en
+  memoria (`lib/rate-limit.ts`), sin Upstash todavía. Es best-effort (se
+  reinicia en cada arranque en frío); reemplazar por Upstash Ratelimit si el
+  tráfico del piloto lo justifica. Ver ARCHITECTURE.md 4.2.5.
 - (agrega aquí cada decisión nueva que cierres, con fecha)

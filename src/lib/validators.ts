@@ -135,3 +135,36 @@ export const ServicioSchema = z.object({
     .regex(/^[a-z0-9-]{2,30}$/, "Usa minúsculas, números y guiones (2 a 30 caracteres)."),
   destacado: z.boolean(),
 });
+
+// --- Fase 5: cupones (CU-13) --------------------------------------------
+
+export const CuponSchema = z
+  .object({
+    codigo: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .min(3, "El código debe tener al menos 3 caracteres.")
+      .max(40, "Máximo 40 caracteres."),
+    descripcion: opcional(200),
+    tipoDescuento: z.enum(["porcentaje", "monto_fijo"], "Elige un tipo de descuento válido."),
+    valorDescuento: z
+      .string()
+      .transform((v) => Number(v))
+      .refine((v) => Number.isFinite(v) && v > 0, "Ingresa un valor mayor a cero."),
+    fechaFin: z
+      .string()
+      .trim()
+      .transform((v) => (v === "" ? null : new Date(v).toISOString())),
+    limiteUsos: z
+      .string()
+      .trim()
+      .transform((v) => (v === "" ? null : Number(v)))
+      .refine((v) => v === null || (Number.isInteger(v) && v > 0), {
+        message: "El límite de usos debe ser un número entero mayor a cero.",
+      }),
+  })
+  .refine((v) => v.tipoDescuento !== "porcentaje" || v.valorDescuento <= 100, {
+    message: "Un descuento por porcentaje no puede superar 100.",
+    path: ["valorDescuento"],
+  });

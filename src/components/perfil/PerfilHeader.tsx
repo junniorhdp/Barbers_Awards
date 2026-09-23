@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { LogoMark } from "./LogoMark";
+import { BotonReservar } from "./BotonReservar";
 import type { LogoPreset } from "@/lib/logo-presets";
 
 const ENLACES = [
@@ -19,10 +20,12 @@ export function PerfilHeader({
   nombre,
   logoPreset,
   subtitulo,
+  puedeReservar,
 }: {
   nombre: string;
   logoPreset: LogoPreset;
   subtitulo: string;
+  puedeReservar: boolean;
 }) {
   const [scrolled, setScrolled] = useState(false);
   const [menuAbierto, setMenuAbierto] = useState(false);
@@ -55,9 +58,13 @@ export function PerfilHeader({
         </ul>
 
         <div className="nav-cta">
-          <button type="button" className="btn btn-gold" disabled aria-disabled title="Próximamente">
-            Reservas por WhatsApp — próximamente
-          </button>
+          {puedeReservar ? (
+            <BotonReservar className="btn btn-gold">Reservar por WhatsApp</BotonReservar>
+          ) : (
+            <button type="button" className="btn btn-gold" disabled aria-disabled title="Sin WhatsApp configurado">
+              Reservas por WhatsApp — no disponible
+            </button>
+          )}
           <button
             className="burger"
             aria-label="Abrir menú"

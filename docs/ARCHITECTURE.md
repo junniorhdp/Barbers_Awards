@@ -874,7 +874,7 @@ Ambas son barreras blandas en el sentido de que `telefono_cliente` lo declara el
 | Validación | `zod`; además confirma que la barbería exista y no esté en estado `inactivo` |
 | Escritura | Cliente administrador (`service_role`); `leads_whatsapp` no tiene política de INSERT pública |
 | Respuestas | 201 creado, 400 cuerpo inválido, 404 barbería no encontrada, 429 demasiadas solicitudes |
-| Protección | Límite de frecuencia por IP y barbería (por ejemplo, 10 por minuto) con Upstash Ratelimit o reglas del Firewall de Vercel |
+| Protección | Límite de frecuencia por IP y barbería (por ejemplo, 10 por minuto) con Upstash Ratelimit o reglas del Firewall de Vercel. **Fase 5:** implementado como un contador en memoria (`lib/rate-limit.ts`) mientras no haya credenciales de Upstash — best-effort, se reinicia en cada arranque en frío de la instancia serverless; reemplazar por Upstash si el tráfico real del piloto lo justifica |
 | Defensa en profundidad | El cliente ya validó `cupon_ya_usado()` y el `limite_usos` (4.2.1, 4.2.4), pero el servidor nunca confía solo en eso: si el `INSERT` con `cupon_id` falla por `23505` (mismo teléfono, mismo cupón — alguien pudo saltarse la validación del navegador) o porque el cupón alcanzó su tope entre la validación y el envío, se reintenta el mismo insert con `cupon_id: null`. La reserva nunca se cae; solo se cae el descuento |
 
 ```ts
