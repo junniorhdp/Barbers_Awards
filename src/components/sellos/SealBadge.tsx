@@ -20,6 +20,7 @@ export function SealBadge(props: Props) {
   }
 
   const color = props.colorHex ?? COLOR_POR_DEFECTO;
+  const colorOscuro = oscurecer(color);
 
   if (props.vencido) {
     return (
@@ -34,8 +35,8 @@ export function SealBadge(props: Props) {
       href={`/verificar/${props.folio}`}
       className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold shadow"
       style={{
-        background: `linear-gradient(135deg, ${color}, ${oscurecer(color)})`,
-        color: colorTextoLegible(color),
+        background: `linear-gradient(135deg, ${color}, ${colorOscuro})`,
+        color: colorTextoLegible(color, colorOscuro),
       }}
     >
       {props.nombreSello}
