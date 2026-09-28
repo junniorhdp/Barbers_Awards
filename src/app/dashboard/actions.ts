@@ -547,3 +547,33 @@ export async function moverServicio(
   revalidarPerfil(barberia.slug, "/dashboard/servicios");
   return { success: true };
 }
+
+// --- Redimir cupón en el local (CU-14) -----------------------------------
+
+// ARCHITECTURE.md 4.2.6: redimir ya no es "buscar un código y sumar un
+// contador suelto" — el código es público y compartido, así que se marca
+// conversion_exitosa en el lead específico que el dueño encontró por nombre
+// o teléfono. El contador de cupones_descuento.veces_redimido lo deriva el
+// trigger trg_leads_sync_cupon_usage, no esta función.
+export async function marcarConversionLead(
+  leadId: string,
+  conversionExitosa: boolean,
+): Promise<FormState> {
+  const ctx = await contextoDueno();
+  if ("error" in ctx) return { error: ctx.error };
+  const { supabase, barberia } = ctx;
+
+  const { error } = await supabase
+    .from("leads_whatsapp")
+    .update({ conversion_exitosa: conversionExitosa })
+    .eq("id", leadId)
+    .eq("barberia_id", barberia.id);
+  if (error) {
+    // Si el cupón ya alcanzó su limite_usos, este es el mensaje real del
+    // trigger ('Este cupón alcanzó su límite de N usos.'), no uno genérico.
+    return { error: error.message };
+  }
+
+  revalidarPerfil(barberia.slug, "/dashboard/cupones");
+  return { success: true };
+}

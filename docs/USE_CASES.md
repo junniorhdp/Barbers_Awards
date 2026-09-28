@@ -2,7 +2,7 @@
 
 **Proyecto:** Barbers Awards
 
-**Versión:** 2.3 (MVP — certificaciones adicionales en CU-18/CU-19)
+**Versión:** 2.4 (MVP — CU-14 corregido para reflejar la redención por lead)
 
 **Arquitectura:** Next.js (App Router), Supabase (PostgreSQL + Auth + Storage), Tailwind CSS (Theme Dark/Gold), Wompi.
 
@@ -303,7 +303,7 @@
 
 **Salida:** Promociones disponibles en el perfil público.
 
-### CU-14: Redimir Cupón en el Local *(nuevo desde la v2.1)*
+### CU-14: Redimir Cupón en el Local *(nuevo desde la v2.1, flujo corregido en v2.4)*
 
 | Campo | Detalle |
 | --- | --- |
@@ -311,21 +311,22 @@
 | Precondición | El cliente presenta un código de cupón (obtenido en CU-05) al momento de pagar |
 
 **Flujo Principal:**
-1. En `/dashboard/cupones`, el dueño o barbero busca el código que el cliente presenta.
-2. El sistema valida que el código exista y esté activo.
-3. El dueño o barbero confirma la redención.
-4. El sistema incrementa en 1 el contador de usos del cupón (`veces_redimido`) y registra la fecha de la redención.
+1. En `/dashboard/cupones`, el dueño o barbero busca **por nombre o teléfono del cliente** entre los leads recientes de la barbería (no por el código del cupón — ver la nota más abajo).
+2. El sistema muestra los leads que coinciden, con su servicio, barbero, cupón usado (si tenía uno) y si ya fue redimido.
+3. El dueño o barbero confirma la redención sobre ese lead específico.
+4. El sistema marca `conversion_exitosa = true` en ese lead. Un trigger de la base de datos suma 1 al contador de usos del cupón asociado (`veces_redimido`) — o rechaza la redención con un mensaje claro si el cupón ya alcanzó su `limite_usos`.
 
 **Flujo Alternativo:**
-- **A1 — Código inexistente o inactivo:** el sistema indica que el código no se puede redimir y por qué (no encontrado o pausado).
+- **A1 — Sin coincidencias:** si ningún lead reciente coincide con el nombre o teléfono, el sistema lo indica; hoy la búsqueda solo cubre los últimos 50 leads de la barbería (ver decisión abierta 16 de `ARCHITECTURE.md`).
+- **A2 — Cupón en su límite de usos:** el sistema rechaza la redención y muestra el motivo, sin marcar nada.
+- **A3 — Redención marcada por error:** el dueño puede deshacerla (con confirmación explícita); el trigger resta el uso del cupón.
 
-**Reglas de Negocio (decisión de diseño de esta versión):**
-- El código de un cupón es **público y compartido**: cualquier visitante que vea el perfil puede copiarlo. Por eso "redimir" **no marca el cupón entero como agotado ni lo desactiva para los demás clientes**: solo suma una unidad a su contador de usos. Un cupón sigue disponible para nuevos clientes hasta que el dueño lo pause manualmente.
-- Por el mismo motivo, la redención **no se vincula automáticamente a un Lead de WhatsApp específico**: como el código es compartido, no hay manera confiable de saber cuál de los clientes que lo copiaron es el que se presentó en el local. Se cuenta como una redención de la barbería, no de un cliente en particular.
-- Esta regla reemplaza al intento inicial de "asociar la redención al Lead correspondiente cuando sea posible", que no es implementable mientras el cupón sea un código público compartido. Si en el futuro se necesita saber exactamente qué Lead se convirtió, la alternativa es generar códigos de un solo uso por Lead, lo cual es un cambio de diseño mayor fuera de este MVP.
-- Esta funcionalidad requiere agregar a `cupones_descuento` las columnas `veces_redimido` (entero, por defecto 0) y, opcionalmente, `limite_usos` (entero, nulo = sin límite). No están incluidas todavía en `SCHEMA.sql` v1.1; se agregan en una migración v1.2 antes de construir este caso de uso.
+**Reglas de Negocio:**
+- El código de un cupón es **público y compartido**: cualquier visitante que vea el perfil puede copiarlo. Por eso "redimir" no busca el código directamente — busca el **lead** (la reserva concreta) que ese cliente generó al reservar por WhatsApp (CU-06), y marca esa conversión específica.
+- Como el código es compartido, puede haber varios leads con el mismo cupón; el dueño depende de que el nombre o teléfono que el cliente da en el local coincida con el que dio al reservar. Sigue siendo una limitación conocida y sin resolver (decisión abierta 16 de `ARCHITECTURE.md`).
+- Un cupón sigue disponible para nuevos clientes hasta que el dueño lo pause manualmente o alcance su `limite_usos`; redimir uno no lo agota para los demás.
 
-**Salida:** El contador de redenciones del cupón aumenta y queda disponible para el dashboard de métricas (CU-15).
+**Salida:** El lead queda marcado como convertido, el contador de redenciones del cupón aumenta y queda disponible para el dashboard de métricas (CU-15).
 
 ### CU-15: Visualizar Dashboard de Métricas (Leads/ROI)
 
@@ -448,4 +449,5 @@
 | 2.1 | CU-15 y CU-20 agregan la métrica de cupones redimidos, distinta de cupones copiados. |
 | 2.2 | Se corrige una inconsistencia de numeración señalada por un compañero del equipo: Equipo y Servicios (antes CU-09B y CU-09C) tenían sufijo de letra a pesar de tener ruta propia en el dashboard, mientras que Cupones (antes CU-11) sí tenía número propio pese a ser un caso del mismo tipo. Se aplica la regla "número propio si tiene ruta propia, sufijo si es una sección de una página que ya tiene su caso de uso" de forma consistente. CU-03B se mantiene como sufijo bajo esa misma regla, porque es una sección de `/barberia/[id]`, no una ruta propia. |
 | 2.3 | CU-18 corrige "una barbería solo puede tener un sello activo a la vez": esa exclusividad aplica solo al **nivel de calidad** (Gold/Silver). Se agregan **certificaciones adicionales** (categoría "reconocimiento", ej. "Bioseguridad") que se acumulan sin límite y no compiten con el nivel de calidad. CU-19 refleja la categoría del sello en su flujo. Requiere `SCHEMA.sql` v1.6 (`catalogo_sellos.categoria`, `certificaciones.categoria`). |
+| 2.4 | CU-14 quedó desactualizado desde que `SCHEMA.sql` v1.3 y `ARCHITECTURE.md` 4.2.6 rediseñaron la redención (el texto todavía decía que vincular la redención a un Lead "no es implementable", cuando ya estaba implementado así). Se corrige el flujo completo: redimir es buscar el **lead** del cliente por nombre o teléfono entre los leads recientes (no el código del cupón, que es público y compartido) y marcar `conversion_exitosa`. Se agregan los flujos alternativos de "sin coincidencias", "cupón en su límite de usos" y "deshacer una redención por error". |
 | 2.2 | Tabla de equivalencias con la numeración anterior (v2.1 → v2.2): CU-09B (Equipo) → CU-10, CU-09C (Servicios) → CU-11, CU-10 (Wompi) → CU-12, CU-11 (Cupones) → CU-13, CU-11B (Redimir Cupón) → CU-14, CU-12 (Métricas dueño) → CU-15, CU-13 (Login admin) → CU-16, CU-14 (Postulaciones) → CU-17, CU-15 (Certificaciones) → CU-18, CU-16 (Catálogo de sellos) → CU-19, CU-17 (Métricas globales) → CU-20. Pendiente: actualizar estas referencias en `docs/SCHEMA.sql`, `docs/ARCHITECTURE.md` y `docs/HISTORIAS_USUARIO.md`, que todavía citan la numeración v2.1. |
