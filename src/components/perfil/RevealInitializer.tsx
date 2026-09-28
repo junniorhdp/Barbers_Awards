@@ -4,11 +4,13 @@ import { useEffect } from "react";
 
 // ARCHITECTURE.md 3.7: las animaciones "reveal" se activan solo después de
 // hidratar (si no, un buscador o un usuario sin JS vería el contenido
-// invisible) y se desactivan con prefers-reduced-motion.
+// invisible) y se desactivan con prefers-reduced-motion. .seal-reveal (el
+// destello del sello) reutiliza el mismo observer: mismo disparo único al
+// entrar en el viewport, mismo gate de movimiento reducido.
 export function RevealInitializer() {
   useEffect(() => {
     const prefiereMenosMovimiento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const elementos = document.querySelectorAll<HTMLElement>(".perfil .reveal");
+    const elementos = document.querySelectorAll<HTMLElement>(".perfil .reveal, .perfil .seal-reveal");
 
     if (prefiereMenosMovimiento) {
       elementos.forEach((el) => el.classList.add("in"));

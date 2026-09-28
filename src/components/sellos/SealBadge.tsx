@@ -33,10 +33,11 @@ export function SealBadge(props: Props) {
   return (
     <Link
       href={`/verificar/${props.folio}`}
-      className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold shadow"
+      className="seal-reveal inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-sm font-bold tracking-wide sm:text-base"
       style={{
         background: `linear-gradient(135deg, ${color}, ${colorOscuro})`,
         color: colorTextoLegible(color, colorOscuro),
+        boxShadow: `0 10px 28px -6px color-mix(in srgb, ${color} 65%, transparent), 0 0 0 1px color-mix(in srgb, ${color} 35%, transparent)`,
       }}
     >
       {props.nombreSello}
