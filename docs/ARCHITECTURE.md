@@ -3,7 +3,7 @@
 | Campo | Detalle |
 | --- | --- |
 | Proyecto | Barbers Awards |
-| Versión | 1.3 (MVP) |
+| Versión | 1.4 (MVP) |
 | Documentos relacionados | `docs/USE_CASES.md` (casos de uso) y `docs/SCHEMA.sql` (base de datos) |
 | Audiencia | Desarrolladores y Claude Code |
 
@@ -114,7 +114,8 @@ Recomendación tipográfica: Playfair Display para títulos (aire de prestigio) 
 | Componente | Descripción | CU |
 | --- | --- | --- |
 | `BarberiaCard` | Fondo `night`, borde dorado (`border-gold/40`). Al pasar el cursor: borde dorado pleno y destello `shadow-glow-violet`. Foto con `next/image`, nombre, ciudad/zona y `SealBadge` | CU-02 |
-| `SealBadge` | Color tomado de `catalogo_sellos.color_hex` (degradado del color hacia una versión más oscura, texto `on-brand`-equivalente calculado por contraste); si `color_hex` es nulo, usa `gold` como color por defecto. En verificación (contorno `violet-neon`) e inactivo (`muted`) no dependen del catálogo. Enlaza a `/verificar/[folio]` | CU-03, CU-04 |
+| `SealBadge` | Solo el nivel de calidad (Gold/Silver/En Verificación/Vencido). Color tomado de `catalogo_sellos.color_hex` (degradado del color hacia una versión más oscura, texto elegido por contraste real de WCAG contra ambos extremos del degradado, `lib/color.ts`); si `color_hex` es nulo, usa `gold` como color por defecto. En verificación (contorno `violet-neon`) e inactivo (`muted`) no dependen del catálogo. Enlaza a `/verificar/[folio]` | CU-03, CU-04 |
+| `ReconocimientosBadge` | Pastilla "+N más" junto al `SealBadge`, agrupa las certificaciones de categoría `reconocimiento` (se acumulan sin límite, no compiten con el nivel de calidad). Modal (`dialog`, mismo patrón que `DiplomaViewerModal`) con la lista y un enlace a `/verificar/[folio]` por cada una — sin QR ni verificación nueva | CU-03, CU-04, CU-18 |
 | `TeamCard` | Avatar, nombre, años de experiencia, insignias de especialidad y botón "Ver certificados" | CU-03B |
 | `DiplomaViewerModal` | Modal accesible (elemento `dialog` o Radix Dialog): foco atrapado, cierre con Esc. Imágenes con `next/image` y PDFs con `iframe` u `object`. Navegación entre diplomas | CU-03B |
 | `CouponCard` | Código en fuente monoespaciada y botón "Copiar cupón" con `navigator.clipboard.writeText`. Guarda el código en el contexto de reserva | CU-05 |
@@ -353,7 +354,7 @@ barbers-awards/
 │   │   ├── servicio-iconos.tsx          # mapeo de íconos de servicio a lucide-react
 │   │   ├── horarios.ts                  # esquema zod, agrupación y "abierto ahora"
 │   │   ├── storage.ts                   # URL pública de un objeto del bucket
-│   │   ├── color.ts                     # utilidades de contraste para SealBadge
+│   │   ├── color.ts                     # contraste real de WCAG para SealBadge
 │   │   ├── rate-limit.ts                # límite de frecuencia en memoria de /api/leads (Fase 5)
 │   │   ├── folio.ts                     # generarFolio() (CU-18)
 │   │   └── validators.ts                # esquemas zod (incluye SERVICIO_ICONOS_SUGERIDOS)
@@ -467,7 +468,12 @@ export const createAdminClient = () =>
 4. Si el paso 3 falla, elimina el usuario creado para no dejar cuentas sin barbería.
 5. Redirige a `/dashboard`.
 
-**Emisión de sello (CU-18).** Server Action del administrador: toma el `sello_id` elegido del selector (poblado desde `catalogo_sellos`, CU-19), genera el folio, inserta en `certificaciones` y actualiza `barberias.estado_sello` con el `nivel` correspondiente de ese sello. Si el folio choca con uno existente (error `23505`), reintenta.
+**Emisión de sello (CU-18).** Server Action del administrador: toma el `sello_id` elegido del selector (poblado desde `catalogo_sellos`, CU-19), genera el folio e inserta en `certificaciones` (copiando `categoria` del sello elegido). Si el folio choca con uno existente (error `23505`), reintenta. Desde SCHEMA.sql v1.6, la categoría del sello decide el resto del flujo:
+
+- `categoria = 'calidad'` (Gold/Silver): además actualiza `barberias.estado_sello` con el `nivel` correspondiente. Sigue siendo excluyente — el índice único `uq_certificaciones_calidad_activa_por_barberia` exige revocar o pausar el nivel de calidad activo antes de asignar otro.
+- `categoria = 'reconocimiento'` (ej. "Bioseguridad"): no toca `barberias.estado_sello` y no tiene restricción de unicidad — una barbería puede acumular varios reconocimientos activos a la vez, incluso repetidos (decisión deliberada: si el staff otorga el mismo por error, se corrige revocándolo a mano; no vale la pena una restricción nueva sin haber visto el problema ocurrir en el piloto).
+
+Pausar o revocar una certificación solo resetea `barberias.estado_sello` a `'pendiente'` si la certificación afectada era de categoría `'calidad'`.
 
 ```ts
 const ALFABETO = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';   // sin I, L, O ni 0/1
@@ -513,7 +519,7 @@ const { data: b } = await supabase
     servicios ( id, nombre, descripcion, precio, duracion_min, icono, destacado, orden ),
     barberos ( id, nombre, foto_avatar, experiencia_anos, especialidades, diplomas_urls ),
     certificaciones (
-      folio_verificacion, estado, fecha_emision, fecha_vencimiento,
+      folio_verificacion, categoria, estado, fecha_emision, fecha_vencimiento,
       catalogo_sellos ( nombre_sello, nivel, color_hex )
     ),
     cupones_descuento ( id, codigo, descripcion, tipo_descuento, valor_descuento, veces_redimido, limite_usos )
@@ -530,20 +536,20 @@ const cuponDisponible = (c: { veces_redimido: number; limite_usos: number | null
   c.limite_usos === null || c.veces_redimido < c.limite_usos;
 ```
 
-Las políticas RLS se aplican también a las relaciones: el visitante solo recibe servicios y cupones activos. El filtro `.or(...)` sobre `fecha_fin` se hace en la consulta porque la política pública de `cupones_descuento` (`SCHEMA.sql`) solo exige `es_activo = true`, no vigencia; sin este filtro, un cupón vencido pero todavía activo seguiría apareciendo. De `certificaciones` se toma la fila con estado `activo`; su nombre, nivel y color ya no están fijos en el código, sino en `catalogo_sellos` (CU-19).
+Las políticas RLS se aplican también a las relaciones: el visitante solo recibe servicios y cupones activos. El filtro `.or(...)` sobre `fecha_fin` se hace en la consulta porque la política pública de `cupones_descuento` (`SCHEMA.sql`) solo exige `es_activo = true`, no vigencia; sin este filtro, un cupón vencido pero todavía activo seguiría apareciendo. De `certificaciones` se toma la fila `activo` con `categoria = 'calidad'` para el `SealBadge` (a lo sumo una, por el índice único de SCHEMA.sql v1.6); las filas `activo` con `categoria = 'reconocimiento'` se agrupan aparte para `ReconocimientosBadge`. Nombre, nivel y color del sello de calidad ya no están fijos en el código, sino en `catalogo_sellos` (CU-19).
 
 | Sección de la plantilla | Fuente de datos | Notas |
 | --- | --- | --- |
 | Encabezado y logo | `logo_preset`, `nombre`, `anio_fundacion` | Subtítulo "Desde {año}"; sin año, usa zona y ciudad |
 | Portada | `eslogan`, `descripcion`, `ciudad`, `anio_fundacion` | El título es el eslogan (si falta, el nombre); su última palabra se resalta con el acento |
 | Cifras de la portada | `barberos`, `servicios` | Cantidad de barberos, años de experiencia combinada (suma de `experiencia_anos`) y servicios ofrecidos. Se eliminan los contadores inventados de la plantilla |
-| Indicadores flotantes | `horarios`, `certificaciones` | "Abierto ahora" y sello con folio; reemplazan "4.9 · +300 reseñas" |
+| Indicadores flotantes | `horarios`, `certificaciones` | "Abierto ahora", sello de calidad con folio, y "+N más" si hay reconocimientos adicionales; reemplazan "4.9 · +300 reseñas" |
 | Nosotros | `historia`, `fotos`, `barberos.especialidades` | Párrafos separados por línea en blanco; la foto principal es `fotos[0]`; la lista de puntos usa las especialidades reales del equipo |
 | Servicios | tabla `servicios` | Precio en COP con `Intl.NumberFormat('es-CO')`; `destacado` muestra la cinta "Popular" |
 | Equipo (CU-03B) | `barberos` | Sección que la plantilla no trae: `TeamCard` y `DiplomaViewerModal` |
 | Galería | `fotos` | Texto alternativo genérico ("Foto N de {nombre}"), sin pies de foto |
 | Cupones (CU-05) | `cupones_descuento` | Sección que la plantilla no trae: `CouponCard`. Los cupones donde `cuponDisponible()` es falso se muestran con una etiqueta "Agotado" y no se pueden seleccionar en `WhatsAppBookingSheet` (CU-06) |
-| Sello (CU-04) | `certificaciones`, `catalogo_sellos`, `estado_sello` | `SealBadge` con enlace a `/verificar/[folio]`; color y nombre del sello vienen de `catalogo_sellos`, no del código |
+| Sello (CU-04) | `certificaciones`, `catalogo_sellos`, `estado_sello` | `SealBadge` (solo nivel de calidad) con enlace a `/verificar/[folio]`; color y nombre vienen de `catalogo_sellos`, no del código. `ReconocimientosBadge` agrupa aparte las certificaciones adicionales (`categoria = 'reconocimiento'`) |
 | Horario | `horarios` | Los días consecutivos con igual horario se agrupan ("Lunes – Viernes") |
 | Contacto y redes | `direccion`, `zona`, `ciudad`, `telefono_whatsapp`, `instagram_url`, `facebook_url` | Sin correo público |
 | Botones de reserva | `WhatsAppBookingSheet` | El encabezado, el bloque de contacto y el botón flotante abren el mismo selector (4.2); no quedan enlaces `#` |
@@ -1066,3 +1072,4 @@ Puntos donde los casos de uso o el esquema aún no definen todo lo que la aplica
 | 1.1 | Perfil dinámico basado en la plantilla (secciones 2.6 y 3.7), color de acento y logos predefinidos, tabla `servicios` y ruta `/dashboard/servicios` (CU-11), decisiones 12 a 15 y decisión 1 resuelta |
 | 1.2 | Sincronización con `SCHEMA.sql` v1.3 y `USE_CASES.md` v2.2. Renumeración de CU-09B/CU-09C/CU-10/CU-11/CU-11B/CU-12 a CU-17 en toda la sección 3 y en 2.4, siguiendo la regla "número propio si tiene ruta propia" acordada con el equipo. `SealBadge` y la consulta del perfil (3.7) usan `catalogo_sellos` en vez de un nivel de sello fijo en el código. Cupones con vigencia (`fecha_fin`) filtrada también en la consulta pública, no solo en RLS. Sección 4.2 reescrita: el selector de WhatsApp ahora captura nombre y teléfono, valida con `cupon_ya_usado()` y respeta `limite_usos` antes de crear el lead (Opción 4 + Opción 2 de antiabuso); nueva sección 4.2.6 sobre cómo se redime un cupón (CU-14) marcando el lead como convertido. Decisiones 2 (parcial), 3 y 4 marcadas resueltas; nueva decisión 16 sobre cómo el dueño ubica el lead correcto al redimir. |
 | 1.3 | Sección 6 renombrada a "Despliegue e Infraestructura": nueva 6.1 documentando que el dominio (`barbersawards.com`) se administra en Hostinger/HostGator solo para DNS (registros A y CNAME hacia Vercel), mientras la aplicación corre íntegramente en Vercel. Corrección menor: la lista de verificación decía "8 tablas", ya eran 9 desde la v1.2 (se agregó `catalogo_sellos`). |
+| 1.4 | `catalogo_sellos.categoria` (SCHEMA.sql v1.6) separa el nivel de calidad (Gold/Silver, sigue excluyente) de certificaciones adicionales tipo "Bioseguridad" (`categoria = 'reconocimiento'`, se acumulan sin límite, nunca tocan `barberias.estado_sello`). Nuevo componente `ReconocimientosBadge` ("+N más" junto a `SealBadge`, con modal a `/verificar/[folio]`). `/admin/certificaciones` gestiona ambas categorías por separado. La regla "un sello activo a la vez" (CU-18, historia 19) se corrige: aplica solo al nivel de calidad. |

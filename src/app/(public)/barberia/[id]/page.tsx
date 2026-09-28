@@ -19,6 +19,7 @@ import { BotonReservar } from "@/components/perfil/BotonReservar";
 import { WhatsAppBookingSheet } from "@/components/perfil/WhatsAppBookingSheet";
 import { ReservaProvider } from "@/components/perfil/ReservaContext";
 import { SealBadge } from "@/components/sellos/SealBadge";
+import { ReconocimientosBadge } from "@/components/perfil/ReconocimientosBadge";
 import "../perfil.css";
 
 export const revalidate = 300; // ARCHITECTURE.md 3.5: red de seguridad de ~5 min
@@ -47,10 +48,11 @@ type Barbero = {
 
 type Certificacion = {
   folio_verificacion: string;
+  categoria: string;
   estado: string;
   fecha_emision: string;
   fecha_vencimiento: string | null;
-  catalogo_sellos: { nombre_sello: string; nivel: string; color_hex: string | null } | null;
+  catalogo_sellos: { nombre_sello: string; nivel: string | null; color_hex: string | null } | null;
 };
 
 type Cupon = {
@@ -94,7 +96,7 @@ export default async function PerfilBarberiaPage({
       horarios, fotos, color_acento, logo_preset,
       servicios ( id, nombre, descripcion, precio, duracion_min, icono, destacado, orden ),
       barberos ( id, nombre, foto_avatar, experiencia_anos, especialidades, diplomas_urls ),
-      certificaciones ( folio_verificacion, estado, fecha_emision, fecha_vencimiento, catalogo_sellos ( nombre_sello, nivel, color_hex ) ),
+      certificaciones ( folio_verificacion, categoria, estado, fecha_emision, fecha_vencimiento, catalogo_sellos ( nombre_sello, nivel, color_hex ) ),
       cupones_descuento ( id, codigo, descripcion, tipo_descuento, valor_descuento, veces_redimido, limite_usos )
     `,
     )
@@ -115,10 +117,20 @@ export default async function PerfilBarberiaPage({
   const cupones = (b.cupones_descuento ?? []) as unknown as Cupon[];
   const puedeReservar = Boolean(b.telefono_whatsapp);
 
-  const certificacionActiva = certificaciones.find((c) => c.estado === "activo") ?? null;
+  const certificacionActiva =
+    certificaciones.find((c) => c.estado === "activo" && c.categoria === "calidad") ?? null;
   const vencida = Boolean(
     certificacionActiva?.fecha_vencimiento && new Date(certificacionActiva.fecha_vencimiento) < new Date(),
   );
+  // Reconocimientos (CU-18/CU-19): se acumulan sin límite, nunca reemplazan
+  // ni compiten con el nivel de calidad — se agrupan detrás de "+N más".
+  const reconocimientosActivos = certificaciones
+    .filter((c) => c.estado === "activo" && c.categoria === "reconocimiento")
+    .map((c) => ({
+      folio_verificacion: c.folio_verificacion,
+      fecha_emision: c.fecha_emision,
+      nombre_sello: c.catalogo_sellos?.nombre_sello ?? "Reconocimiento",
+    }));
 
   const experienciaTotal = barberos.reduce((total, barbero) => total + barbero.experiencia_anos, 0);
   const especialidadesUnicas = Array.from(new Set(barberos.flatMap((barbero) => barbero.especialidades)));
@@ -182,15 +194,20 @@ export default async function PerfilBarberiaPage({
 
           <div className="hero-visual">
             {horarios ? <OpenNowBadge horarios={horarios} /> : null}
-            {certificacionActiva ? (
+            {certificacionActiva || reconocimientosActivos.length > 0 ? (
               <div className="float-badge b2">
-                <SealBadge
-                  estado="sello"
-                  nombreSello={certificacionActiva.catalogo_sellos?.nombre_sello ?? "Certificado"}
-                  folio={certificacionActiva.folio_verificacion}
-                  colorHex={certificacionActiva.catalogo_sellos?.color_hex ?? null}
-                  vencido={vencida}
-                />
+                {certificacionActiva ? (
+                  <SealBadge
+                    estado="sello"
+                    nombreSello={certificacionActiva.catalogo_sellos?.nombre_sello ?? "Certificado"}
+                    folio={certificacionActiva.folio_verificacion}
+                    colorHex={certificacionActiva.catalogo_sellos?.color_hex ?? null}
+                    vencido={vencida}
+                  />
+                ) : (
+                  <SealBadge estado="en-verificacion" />
+                )}
+                <ReconocimientosBadge reconocimientos={reconocimientosActivos} />
               </div>
             ) : null}
             <div className="pole-frame">

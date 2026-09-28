@@ -90,13 +90,17 @@ export async function emitirCertificacion(_prevState: FormState, formData: FormD
 
   const { data: sello } = await supabase
     .from("catalogo_sellos")
-    .select("nivel")
+    .select("nivel, categoria")
     .eq("id", parsed.data.selloId)
     .maybeSingle();
   if (!sello) return { error: "El sello elegido ya no existe." };
 
-  const nivelEstadoSello = sello.nivel.toLowerCase();
-  if (nivelEstadoSello !== "gold" && nivelEstadoSello !== "silver") {
+  // Solo 'calidad' es excluyente y toca barberias.estado_sello; un
+  // 'reconocimiento' (ej. "Bioseguridad") se acumula sin límite y nunca lo
+  // toca (ver SCHEMA.sql v1.6).
+  const esCalidad = sello.categoria === "calidad";
+  const nivelEstadoSello = (sello.nivel ?? "").toLowerCase();
+  if (esCalidad && nivelEstadoSello !== "gold" && nivelEstadoSello !== "silver") {
     return { error: "Este sello no se puede asignar: su nivel no es Gold ni Silver." };
   }
 
@@ -107,6 +111,7 @@ export async function emitirCertificacion(_prevState: FormState, formData: FormD
     const resultado = await supabase.from("certificaciones").insert({
       barberia_id: parsed.data.barberiaId,
       sello_id: parsed.data.selloId,
+      categoria: sello.categoria,
       folio_verificacion: folio,
       estado: "activo",
       fecha_vencimiento: parsed.data.fechaVencimiento,
@@ -118,20 +123,33 @@ export async function emitirCertificacion(_prevState: FormState, formData: FormD
     return {
       error:
         insertado.error.code === "23505"
-          ? "Esta barbería ya tiene un sello activo. Revócalo o pausa el actual antes de asignar uno nuevo."
+          ? esCalidad
+            ? "Esta barbería ya tiene un nivel de calidad activo. Revócalo o pausa el actual antes de asignar uno nuevo."
+            : "No se pudo generar un folio único. Intenta de nuevo."
           : "No se pudo emitir la certificación.",
     };
   }
 
-  const { data: barberia, error: errorUpdate } = await supabase
-    .from("barberias")
-    .update({ estado_sello: nivelEstadoSello })
-    .eq("id", parsed.data.barberiaId)
-    .select("slug")
-    .single();
-  if (errorUpdate) return { error: "El sello se emitió, pero no se pudo actualizar la barbería." };
+  let slug: string | null = null;
+  if (esCalidad) {
+    const { data: barberia, error: errorUpdate } = await supabase
+      .from("barberias")
+      .update({ estado_sello: nivelEstadoSello })
+      .eq("id", parsed.data.barberiaId)
+      .select("slug")
+      .single();
+    if (errorUpdate) return { error: "El sello se emitió, pero no se pudo actualizar la barbería." };
+    slug = barberia?.slug ?? null;
+  } else {
+    const { data: barberia } = await supabase
+      .from("barberias")
+      .select("slug")
+      .eq("id", parsed.data.barberiaId)
+      .maybeSingle();
+    slug = barberia?.slug ?? null;
+  }
 
-  revalidarPublico(barberia?.slug);
+  revalidarPublico(slug);
   revalidatePath("/admin/certificaciones");
   return { success: true };
 }
@@ -143,7 +161,7 @@ async function cambiarEstadoCertificacion(certificacionId: string, nuevoEstado: 
 
   const { data: certificacion } = await supabase
     .from("certificaciones")
-    .select("estado, barberia_id, barberias ( slug )")
+    .select("estado, categoria, barberia_id, barberias ( slug )")
     .eq("id", certificacionId)
     .maybeSingle();
   if (!certificacion) return { error: "La certificación ya no existe." };
@@ -154,9 +172,10 @@ async function cambiarEstadoCertificacion(certificacionId: string, nuevoEstado: 
     .eq("id", certificacionId);
   if (error) return { error: "No se pudo actualizar la certificación." };
 
-  // Si era el sello activo de la barbería, vuelve a "En Verificación": la
-  // certificación se pausó o revocó, así que ya no hay un Gold/Silver vigente.
-  if (certificacion.estado === "activo") {
+  // Si era el nivel de calidad activo, vuelve a "En Verificación": ya no hay
+  // un Gold/Silver vigente. Un reconocimiento pausado/revocado no toca
+  // estado_sello — nunca lo tocó al emitirse tampoco.
+  if (certificacion.estado === "activo" && certificacion.categoria === "calidad") {
     await supabase.from("barberias").update({ estado_sello: "pendiente" }).eq("id", certificacion.barberia_id);
   }
 
@@ -178,7 +197,9 @@ export async function revocarCertificacion(certificacionId: string): Promise<For
 
 function errorSelloAmigable(error: { code?: string } | null): string {
   if (error?.code === "23505") return "Ya existe un sello con ese nombre.";
-  if (error?.code === "23503") return "No se puede eliminar: hay barberías certificadas con este sello.";
+  if (error?.code === "23503") {
+    return "No se puede eliminar: existen certificaciones (activas o históricas) que usan este sello.";
+  }
   return "No se pudo guardar el sello.";
 }
 
@@ -189,7 +210,8 @@ export async function crearSello(_prevState: FormState, formData: FormData): Pro
 
   const parsed = SelloSchema.safeParse({
     nombreSello: formData.get("nombreSello") ?? "",
-    nivel: formData.get("nivel"),
+    categoria: formData.get("categoria"),
+    nivel: formData.get("nivel") ?? "",
     requisitos: formData.get("requisitos") ?? "",
     entidadEmisora: formData.get("entidadEmisora") ?? "",
     colorHex: formData.get("colorHex") ?? "",
@@ -200,6 +222,7 @@ export async function crearSello(_prevState: FormState, formData: FormData): Pro
 
   const { error } = await supabase.from("catalogo_sellos").insert({
     nombre_sello: parsed.data.nombreSello,
+    categoria: parsed.data.categoria,
     nivel: parsed.data.nivel,
     requisitos: parsed.data.requisitos,
     entidad_emisora: parsed.data.entidadEmisora,
@@ -221,7 +244,8 @@ export async function actualizarSello(_prevState: FormState, formData: FormData)
 
   const parsed = SelloSchema.safeParse({
     nombreSello: formData.get("nombreSello") ?? "",
-    nivel: formData.get("nivel"),
+    categoria: formData.get("categoria"),
+    nivel: formData.get("nivel") ?? "",
     requisitos: formData.get("requisitos") ?? "",
     entidadEmisora: formData.get("entidadEmisora") ?? "",
     colorHex: formData.get("colorHex") ?? "",
@@ -234,6 +258,7 @@ export async function actualizarSello(_prevState: FormState, formData: FormData)
     .from("catalogo_sellos")
     .update({
       nombre_sello: parsed.data.nombreSello,
+      categoria: parsed.data.categoria,
       nivel: parsed.data.nivel,
       requisitos: parsed.data.requisitos,
       entidad_emisora: parsed.data.entidadEmisora,

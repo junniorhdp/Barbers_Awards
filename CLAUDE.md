@@ -52,4 +52,26 @@ docs/USE_CASES.md, docs/ARCHITECTURE.md, docs/SCHEMA.sql, docs/HISTORIAS_USUARIO
   acepta `gold`/`silver`/`pendiente`/`inactivo`. El formulario de
   `/admin/sellos` restringe el selector de `nivel` a esos dos valores; agregar
   un nivel nuevo requiere una migración aparte que amplíe ese CHECK.
+- Certificaciones adicionales, "Bronce" pospuesto (2026-09-28): se descartó
+  agregar un tercer nivel de calidad (Bronce) para el MVP. En su lugar,
+  `catalogo_sellos.categoria` (SCHEMA.sql v1.6) separa "nivel de calidad"
+  (Gold/Silver, sigue siendo uno solo activo a la vez) de "reconocimiento
+  adicional" (ej. "Bioseguridad", se acumula sin límite, nunca toca
+  `barberias.estado_sello`). No se bloquean reconocimientos duplicados a
+  propósito — se corrigen revocando a mano si el staff se equivoca; no vale
+  la pena una restricción nueva sin haber visto el problema ocurrir.
+  `BarberiaCard` del directorio no lista reconocimientos (solo el perfil
+  completo los detalla), pero sí muestra un indicador discreto ("+
+  reconocimientos", sin ícono ni conteo) cuando la barbería tiene al menos
+  uno activo — ajuste menor a la decisión original, pedido tras probar que
+  "En Verificación" no distinguía "sin nivel de calidad, sin nada" de "sin
+  nivel de calidad, con reconocimientos". Costo: una relación embebida
+  (`certificaciones ( estado, categoria )`) en la consulta que ya existía en
+  `directorio/page.tsx`, sin viaje extra a la base de datos.
+- Mensaje de error al eliminar un sello con historial (2026-09-28): se deja
+  `certificaciones.sello_id on delete restrict` tal como está (preserva que
+  `/verificar/[folio]` de una certificación revocada siga resolviendo su
+  sello) — no se relaja la restricción. Solo se corrigió el mensaje para no
+  insinuar que todas las certificaciones que bloquean el borrado están
+  vigentes: puede ser una activa o una histórica (pausada/revocada).
 - (agrega aquí cada decisión nueva que cierres, con fecha)

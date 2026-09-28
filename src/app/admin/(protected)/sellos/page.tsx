@@ -5,7 +5,7 @@ export default async function AdminSellosPage() {
   const supabase = await createClient();
   const { data: sellos } = await supabase
     .from("catalogo_sellos")
-    .select("id, nombre_sello, nivel, requisitos, entidad_emisora, color_hex")
+    .select("id, nombre_sello, categoria, nivel, requisitos, entidad_emisora, color_hex")
     .order("nombre_sello", { ascending: true });
 
   return (

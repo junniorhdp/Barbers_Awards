@@ -2,7 +2,7 @@
 
 **Proyecto:** Barbers Awards
 
-**Versión:** 2.2 (MVP — numeración consistente de los casos de uso B2B)
+**Versión:** 2.3 (MVP — certificaciones adicionales en CU-18/CU-19)
 
 **Arquitectura:** Next.js (App Router), Supabase (PostgreSQL + Auth + Storage), Tailwind CSS (Theme Dark/Gold), Wompi.
 
@@ -397,7 +397,8 @@
 4. Opción de revocar o pausar el sello si el local incumple las normativas.
 
 **Reglas de Negocio:**
-- Una barbería solo puede tener un sello **activo** a la vez. Para asignar uno nuevo, el existente debe revocarse o pausarse primero.
+- Una barbería solo puede tener un **nivel de calidad** (Gold/Silver) **activo** a la vez. Para asignar uno nuevo, el existente debe revocarse o pausarse primero.
+- Además del nivel de calidad, el staff puede otorgar **certificaciones adicionales** de otra categoría (ej. "Bioseguridad") desde el mismo catálogo de sellos (CU-19). Estas se acumulan sin límite por barbería, no compiten con el nivel de calidad ni lo reemplazan, y no están sujetas a la regla de "una activa a la vez".
 
 **Salida:** Certificado digital emitido con folio único comprobable.
 
@@ -410,7 +411,8 @@
 
 **Flujo Principal:**
 1. En `/admin/sellos`, el staff administra las categorías de certificación disponibles.
-2. Permite editar nombres, requisitos del estándar y definir la entidad emisora por defecto (Barbers Awards Official).
+2. Cada sello tiene una categoría: **nivel de calidad** (Gold o Silver; ver CU-18, es la única excluyente) o **reconocimiento adicional** (ej. "Bioseguridad"; se acumula sin límite).
+3. Permite editar nombres, requisitos del estándar y definir la entidad emisora por defecto (Barbers Awards Official).
 
 **Salida:** Catálogo de sellos actualizado y flexible para futuras alianzas.
 
@@ -445,4 +447,5 @@
 | 2.1 | Nuevo CU-14: Redimir Cupón en el Local. Resuelve la decisión abierta sobre "cupones copiados" vs. "cupones redimidos" (ver ARCHITECTURE.md, decisión 2) con un diseño basado en contador de usos, en vez de intentar vincular cada redención a un Lead de WhatsApp específico, algo no confiable mientras el código del cupón sea público y compartido. Requiere una migración menor en SCHEMA.sql (columnas `veces_redimido` y `limite_usos` en `cupones_descuento`), pendiente de aplicar. |
 | 2.1 | CU-15 y CU-20 agregan la métrica de cupones redimidos, distinta de cupones copiados. |
 | 2.2 | Se corrige una inconsistencia de numeración señalada por un compañero del equipo: Equipo y Servicios (antes CU-09B y CU-09C) tenían sufijo de letra a pesar de tener ruta propia en el dashboard, mientras que Cupones (antes CU-11) sí tenía número propio pese a ser un caso del mismo tipo. Se aplica la regla "número propio si tiene ruta propia, sufijo si es una sección de una página que ya tiene su caso de uso" de forma consistente. CU-03B se mantiene como sufijo bajo esa misma regla, porque es una sección de `/barberia/[id]`, no una ruta propia. |
+| 2.3 | CU-18 corrige "una barbería solo puede tener un sello activo a la vez": esa exclusividad aplica solo al **nivel de calidad** (Gold/Silver). Se agregan **certificaciones adicionales** (categoría "reconocimiento", ej. "Bioseguridad") que se acumulan sin límite y no compiten con el nivel de calidad. CU-19 refleja la categoría del sello en su flujo. Requiere `SCHEMA.sql` v1.6 (`catalogo_sellos.categoria`, `certificaciones.categoria`). |
 | 2.2 | Tabla de equivalencias con la numeración anterior (v2.1 → v2.2): CU-09B (Equipo) → CU-10, CU-09C (Servicios) → CU-11, CU-10 (Wompi) → CU-12, CU-11 (Cupones) → CU-13, CU-11B (Redimir Cupón) → CU-14, CU-12 (Métricas dueño) → CU-15, CU-13 (Login admin) → CU-16, CU-14 (Postulaciones) → CU-17, CU-15 (Certificaciones) → CU-18, CU-16 (Catálogo de sellos) → CU-19, CU-17 (Métricas globales) → CU-20. Pendiente: actualizar estas referencias en `docs/SCHEMA.sql`, `docs/ARCHITECTURE.md` y `docs/HISTORIAS_USUARIO.md`, que todavía citan la numeración v2.1. |

@@ -180,19 +180,36 @@ export const RechazoSchema = z.object({
 // restricción); agregar más niveles necesita una migración aparte.
 export const NIVELES_SELLO = ["Gold", "Silver"] as const;
 
-export const SelloSchema = z.object({
-  nombreSello: z.string().trim().min(2, "Ingresa el nombre del sello.").max(60),
-  nivel: z.enum(NIVELES_SELLO, "Elige Gold o Silver."),
-  requisitos: opcional(2000),
-  entidadEmisora: z.string().trim().min(2, "Ingresa la entidad emisora.").max(120),
-  colorHex: z
-    .string()
-    .trim()
-    .transform((v) => (v === "" ? null : v))
-    .refine((v) => v === null || /^#[0-9a-fA-F]{6}$/.test(v), {
-      message: "El color debe ser un hex de 6 dígitos, ej. #D4AF37.",
-    }),
-});
+// Fase "certificaciones adicionales": 'calidad' (Gold/Silver, un sello activo
+// a la vez, mapea a barberias.estado_sello) vs 'reconocimiento' (se acumulan
+// sin límite, ej. "Bioseguridad", nunca tocan estado_sello). nivel solo
+// aplica a 'calidad' — para 'reconocimiento' queda en null, sin forzar un
+// valor de relleno (SCHEMA.sql v1.6 lo hizo nullable a propósito).
+export const CATEGORIAS_SELLO = ["calidad", "reconocimiento"] as const;
+
+export const SelloSchema = z
+  .object({
+    nombreSello: z.string().trim().min(2, "Ingresa el nombre del sello.").max(60),
+    categoria: z.enum(CATEGORIAS_SELLO, "Elige una categoría válida."),
+    nivel: z
+      .string()
+      .trim()
+      .transform((v) => (v === "" ? null : v)),
+    requisitos: opcional(2000),
+    entidadEmisora: z.string().trim().min(2, "Ingresa la entidad emisora.").max(120),
+    colorHex: z
+      .string()
+      .trim()
+      .transform((v) => (v === "" ? null : v))
+      .refine((v) => v === null || /^#[0-9a-fA-F]{6}$/.test(v), {
+        message: "El color debe ser un hex de 6 dígitos, ej. #D4AF37.",
+      }),
+  })
+  .refine((v) => v.categoria !== "calidad" || (NIVELES_SELLO as readonly string[]).includes(v.nivel ?? ""), {
+    message: "Elige Gold o Silver para un sello de nivel de calidad.",
+    path: ["nivel"],
+  })
+  .transform((v) => ({ ...v, nivel: v.categoria === "calidad" ? v.nivel : null }));
 
 export const CertificacionSchema = z.object({
   barberiaId: z.string().uuid("Elige una barbería válida."),

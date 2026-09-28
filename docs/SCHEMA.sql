@@ -1,5 +1,5 @@
 -- =============================================================================
--- BARBERS AWARD  ·  SCHEMA.sql  (MVP v1.5)
+-- BARBERS AWARD  ·  SCHEMA.sql  (MVP v1.6)
 -- Base de datos: Supabase (PostgreSQL + Auth + Storage)
 --
 -- Cómo aplicarlo:
@@ -54,6 +54,16 @@
 -- revisar" y "aprobada pero sin sello Gold/Silver todavía", así que toda
 -- barbería nueva quedaba pública sin que el staff la revisara. Ahora
 -- barberias_select_public exige también estado_postulacion = 'aprobada'.
+--
+-- Cambios de la v1.6 respecto a la v1.5 (ver sección 11 al final del
+-- archivo): catalogo_sellos.categoria ('calidad' | 'reconocimiento') separa
+-- el nivel de calidad (Gold/Silver, sigue siendo uno solo activo por
+-- barbería, sin cambios en esa regla) de certificaciones adicionales tipo
+-- "Bioseguridad" (se acumulan sin límite, no compiten con el nivel de
+-- calidad ni lo reemplazan). catalogo_sellos.nivel pasa a ser opcional: solo
+-- tiene sentido para 'calidad' (es lo que mapea a barberias.estado_sello).
+-- certificaciones.categoria (nueva, copiada del sello al emitir) permite que
+-- el índice único de "una activa a la vez" se limite a categoria = 'calidad'.
 -- =============================================================================
 
 begin;
@@ -950,5 +960,89 @@ begin
   return new;
 end;
 $$;
+
+commit;
+
+
+-- =============================================================================
+-- 11. MIGRACIÓN v1.6 — certificaciones adicionales (CU-18/CU-19)
+--
+--     Hasta la v1.5, "un sello activo a la vez" (USE_CASES.md CU-18 e
+--     HISTORIAS_USUARIO.md 19) trataba cualquier certificación como
+--     excluyente. Desde esta versión eso solo aplica al NIVEL DE CALIDAD
+--     (Gold/Silver, sin cambios en su regla de exclusividad). Se agrega una
+--     segunda categoría, 'reconocimiento' (ej. "Bioseguridad"), que se
+--     acumula sin límite por barbería y no toca barberias.estado_sello.
+--
+--     catalogo_sellos.nivel pasa de not null a nullable: para un sello de
+--     categoria = 'reconocimiento' no representa nada (no existe un
+--     "barberias.estado_sello" de reconocimiento), así que no se le fuerza
+--     un valor de relleno. Sigue siendo obligatorio en la aplicación cuando
+--     categoria = 'calidad' (validado en lib/validators.ts, no en un CHECK:
+--     un CHECK entre dos columnas de la misma fila es posible, pero el
+--     mensaje de error de zod en el formulario es más claro que el de
+--     Postgres para este caso).
+--
+--     certificaciones.categoria es nueva y se copia del sello elegido al
+--     emitir la certificación (inmutable después, igual que
+--     folio_verificacion): un índice único parcial no puede filtrar por una
+--     columna de otra tabla (catalogo_sellos.categoria), así que esta
+--     denormalización es necesaria para que uq_certificaciones_calidad_
+--     activa_por_barberia funcione. El índice viejo (uq_certificaciones_
+--     activa_por_barberia, sin distinguir categoría) se elimina y se
+--     reemplaza por uno que solo exige exclusividad dentro de 'calidad'.
+--
+--     Decisión explícita del usuario: no se bloquean certificaciones de
+--     'reconocimiento' duplicadas (el mismo sello otorgado dos veces a la
+--     misma barbería) — si ocurre por error, se corrige revocando la
+--     duplicada a mano desde /admin/certificaciones.
+-- =============================================================================
+
+begin;
+
+alter table public.catalogo_sellos
+  add column if not exists categoria text not null default 'calidad';
+alter table public.catalogo_sellos
+  alter column nivel drop not null;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'catalogo_sellos_categoria_check'
+  ) then
+    alter table public.catalogo_sellos
+      add constraint catalogo_sellos_categoria_check
+      check (categoria in ('calidad', 'reconocimiento'));
+  end if;
+end
+$$;
+
+alter table public.certificaciones
+  add column if not exists categoria text;
+
+update public.certificaciones c
+set categoria = coalesce(cs.categoria, 'calidad')
+from public.catalogo_sellos cs
+where cs.id = c.sello_id and c.categoria is null;
+
+alter table public.certificaciones
+  alter column categoria set not null;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'certificaciones_categoria_check'
+  ) then
+    alter table public.certificaciones
+      add constraint certificaciones_categoria_check
+      check (categoria in ('calidad', 'reconocimiento'));
+  end if;
+end
+$$;
+
+drop index if exists uq_certificaciones_activa_por_barberia;
+create unique index if not exists uq_certificaciones_calidad_activa_por_barberia
+  on public.certificaciones (barberia_id)
+  where estado = 'activo' and categoria = 'calidad';
 
 commit;

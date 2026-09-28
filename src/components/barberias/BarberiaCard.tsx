@@ -9,6 +9,9 @@ type BarberiaResumen = {
   zona: string | null;
   fotos: string[];
   estado_sello: string;
+  // Opcional: solo el directorio la calcula hoy (CU-18/CU-19). Indicador
+  // discreto, sin listar cuáles ni competir con el badge de estado_sello.
+  tieneReconocimientos?: boolean;
 };
 
 function EstadoSelloTag({ estado }: { estado: string }) {
@@ -52,7 +55,12 @@ export function BarberiaCard({ barberia }: { barberia: BarberiaResumen }) {
             {barberia.ciudad}
           </p>
         </div>
-        <EstadoSelloTag estado={barberia.estado_sello} />
+        <div className="flex flex-col items-end gap-1">
+          <EstadoSelloTag estado={barberia.estado_sello} />
+          {barberia.tieneReconocimientos ? (
+            <span className="text-[11px] text-muted">+ reconocimientos</span>
+          ) : null}
+        </div>
       </div>
     </Link>
   );

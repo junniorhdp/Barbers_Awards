@@ -28,10 +28,14 @@ type SeccionDestacadas = {
 async function obtenerDestacadas(): Promise<SeccionDestacadas> {
   const supabase = createClient();
 
+  // categoria = 'calidad' (SCHEMA.sql v1.6): un reconocimiento adicional (ej.
+  // "Bioseguridad") no debe hacer que una barbería sin Gold/Silver aparezca
+  // como "destacada" aquí.
   const { data: certificadas } = await supabase
     .from("certificaciones")
     .select("fecha_emision, barberias ( id, nombre, slug, ciudad, zona, fotos, estado_sello )")
     .eq("estado", "activo")
+    .eq("categoria", "calidad")
     .order("fecha_emision", { ascending: false })
     .limit(6);
 

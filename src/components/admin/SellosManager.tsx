@@ -3,28 +3,41 @@
 import { useState, useActionState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { crearSello, actualizarSello, eliminarSello, type FormState } from "@/app/admin/(protected)/actions";
-import { NIVELES_SELLO } from "@/lib/validators";
+import { NIVELES_SELLO, CATEGORIAS_SELLO } from "@/lib/validators";
 
 const estadoInicial: FormState = {};
 
 type Sello = {
   id: string;
   nombre_sello: string;
-  nivel: string;
+  categoria: string;
+  nivel: string | null;
   requisitos: string | null;
   entidad_emisora: string;
   color_hex: string | null;
+};
+
+const ETIQUETA_CATEGORIA: Record<string, string> = {
+  calidad: "Nivel de calidad (Gold/Silver, uno activo a la vez)",
+  reconocimiento: "Reconocimiento adicional (se acumula sin límite)",
 };
 
 function FormularioSello({ sello, onGuardado }: { sello?: Sello; onGuardado: () => void }) {
   const accion = sello ? actualizarSello : crearSello;
   const [state, formAction, pending] = useActionState(accion, estadoInicial);
   const formRef = useRef<HTMLFormElement>(null);
+  const [categoria, setCategoria] = useState(sello?.categoria ?? "calidad");
 
   useEffect(() => {
     if (state.success) {
       onGuardado();
-      if (!sello) formRef.current?.reset();
+      if (!sello) {
+        formRef.current?.reset();
+        // Reacción a que el servidor confirmó la creación, no una derivación
+        // de render: mismo criterio que OpenNowBadge para este lint.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setCategoria("calidad");
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
@@ -36,6 +49,25 @@ function FormularioSello({ sello, onGuardado }: { sello?: Sello; onGuardado: () 
       className="flex flex-col gap-3 rounded border border-line bg-night p-4"
     >
       {sello ? <input type="hidden" name="selloId" value={sello.id} /> : null}
+
+      <div className="flex flex-col gap-1">
+        <label htmlFor="categoria" className="text-sm text-muted">
+          Categoría
+        </label>
+        <select
+          id="categoria"
+          name="categoria"
+          value={categoria}
+          onChange={(e) => setCategoria(e.target.value)}
+          className="rounded border border-line bg-carbon px-3 py-2 text-ink"
+        >
+          {CATEGORIAS_SELLO.map((c) => (
+            <option key={c} value={c}>
+              {ETIQUETA_CATEGORIA[c]}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <div className="flex gap-3">
         <div className="flex flex-1 flex-col gap-1">
@@ -50,23 +82,25 @@ function FormularioSello({ sello, onGuardado }: { sello?: Sello; onGuardado: () 
             className="rounded border border-line bg-carbon px-3 py-2 text-ink"
           />
         </div>
-        <div className="flex flex-1 flex-col gap-1">
-          <label htmlFor="nivel" className="text-sm text-muted">
-            Nivel
-          </label>
-          <select
-            id="nivel"
-            name="nivel"
-            defaultValue={sello?.nivel ?? NIVELES_SELLO[0]}
-            className="rounded border border-line bg-carbon px-3 py-2 text-ink"
-          >
-            {NIVELES_SELLO.map((nivel) => (
-              <option key={nivel} value={nivel}>
-                {nivel}
-              </option>
-            ))}
-          </select>
-        </div>
+        {categoria === "calidad" ? (
+          <div className="flex flex-1 flex-col gap-1">
+            <label htmlFor="nivel" className="text-sm text-muted">
+              Nivel
+            </label>
+            <select
+              id="nivel"
+              name="nivel"
+              defaultValue={sello?.nivel ?? NIVELES_SELLO[0]}
+              className="rounded border border-line bg-carbon px-3 py-2 text-ink"
+            >
+              {NIVELES_SELLO.map((nivel) => (
+                <option key={nivel} value={nivel}>
+                  {nivel}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
       </div>
 
       <div className="flex flex-col gap-1">
@@ -163,7 +197,10 @@ export function SellosManager({ sellosIniciales }: { sellosIniciales: Sello[] })
                 ) : null}
                 <div>
                   <p className="font-medium text-ink">
-                    {sello.nombre_sello} <span className="text-xs text-muted">· {sello.nivel}</span>
+                    {sello.nombre_sello}{" "}
+                    <span className="text-xs text-muted">
+                      · {sello.categoria === "calidad" ? `Calidad (${sello.nivel})` : "Reconocimiento"}
+                    </span>
                   </p>
                   <p className="text-sm text-muted">{sello.entidad_emisora}</p>
                 </div>

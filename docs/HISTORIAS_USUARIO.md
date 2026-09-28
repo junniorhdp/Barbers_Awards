@@ -333,8 +333,9 @@ Este documento no reemplaza a `USE_CASES.md`: los casos de uso describen el sist
 
 **Criterios de aceptación:**
 - Dado que selecciono una barbería aprobada, cuando le asigno el sello Gold o Silver, entonces se genera un folio único de verificación y queda visible en `/verificar/[folio]`.
-- Dado que una barbería ya tiene un sello activo, cuando intento asignarle otro, entonces el sistema me exige revocar o pausar el existente primero, para que solo tenga un sello activo a la vez.
+- Dado que una barbería ya tiene un **nivel de calidad** (Gold o Silver) activo, cuando intento asignarle otro, entonces el sistema me exige revocar o pausar el existente primero, para que solo tenga un nivel de calidad activo a la vez.
 - Dado que reviso que una barbería incumple las normas, cuando revoco su sello, entonces su estado cambia de inmediato y deja de mostrarse como certificada en su perfil.
+- Dado que quiero otorgar una certificación adicional (ej. "Bioseguridad") a una barbería, cuando la asigno, entonces se suma a las que ya tenga sin revocar su nivel de calidad ni las demás certificaciones adicionales — no hay límite de cuántas puede acumular.
 
 ### 20: Gestionar el catálogo de sellos
 
@@ -348,6 +349,7 @@ Este documento no reemplaza a `USE_CASES.md`: los casos de uso describen el sist
 
 **Criterios de aceptación:**
 - Dado que entro a `/admin/sellos`, cuando reviso las categorías de certificación, entonces puedo editar sus nombres y requisitos.
+- Dado que creo un sello, cuando elijo la categoría "nivel de calidad", entonces también debo elegir Gold o Silver; si elijo "reconocimiento adicional", el campo de nivel no aplica y no se me pide.
 - Dado que edito la entidad emisora por defecto, cuando guardo el cambio, entonces las nuevas certificaciones la usan automáticamente.
 - Dado que le asigno un color a un sello, cuando lo guardo, entonces el badge de esa certificación en el perfil público y en `/verificar/[folio]` usa ese color, sin que quede cableado en el código.
 

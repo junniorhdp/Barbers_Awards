@@ -33,7 +33,7 @@ async function buscarBarberias(params: ParametrosBusqueda) {
 
   let consulta = supabase
     .from("barberias")
-    .select("id, nombre, slug, ciudad, zona, fotos, estado_sello")
+    .select("id, nombre, slug, ciudad, zona, fotos, estado_sello, certificaciones ( estado, categoria )")
     .neq("estado_sello", "inactivo");
 
   if (ciudad) consulta = consulta.ilike("ciudad", `%${ciudad}%`);
@@ -49,7 +49,16 @@ async function buscarBarberias(params: ParametrosBusqueda) {
   }
 
   const { data } = await consulta.order("nombre", { ascending: true });
-  return data ?? [];
+
+  // Indicador discreto de reconocimientos adicionales (CU-18/CU-19): no se
+  // lista cuáles ni se compite visualmente con el badge de estado_sello,
+  // solo si tiene al menos uno activo. Misma consulta, sin viaje extra.
+  return (data ?? []).map(({ certificaciones, ...barberia }) => ({
+    ...barberia,
+    tieneReconocimientos: (certificaciones as unknown as { estado: string; categoria: string }[]).some(
+      (c) => c.estado === "activo" && c.categoria === "reconocimiento",
+    ),
+  }));
 }
 
 export default async function DirectorioPage({
