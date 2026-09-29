@@ -33,7 +33,9 @@ async function buscarBarberias(params: ParametrosBusqueda) {
 
   let consulta = supabase
     .from("barberias")
-    .select("id, nombre, slug, ciudad, zona, fotos, estado_sello, certificaciones ( estado, categoria )")
+    .select(
+      "id, nombre, slug, ciudad, zona, fotos, estado_sello, estado_suscripcion, certificaciones ( estado, categoria )",
+    )
     .neq("estado_sello", "inactivo");
 
   if (ciudad) consulta = consulta.ilike("ciudad", `%${ciudad}%`);

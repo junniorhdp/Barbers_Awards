@@ -93,7 +93,7 @@ export default async function PerfilBarberiaPage({
       `
       id, nombre, slug, eslogan, descripcion, historia, anio_fundacion,
       direccion, ciudad, zona, telefono_whatsapp, instagram_url, facebook_url,
-      horarios, fotos, color_acento, logo_preset,
+      horarios, fotos, color_acento, logo_preset, estado_suscripcion,
       servicios ( id, nombre, descripcion, precio, duracion_min, icono, destacado, orden ),
       barberos ( id, nombre, foto_avatar, experiencia_anos, especialidades, diplomas_urls ),
       certificaciones ( folio_verificacion, categoria, estado, fecha_emision, fecha_vencimiento, catalogo_sellos ( nombre_sello, nivel, color_hex ) ),
@@ -115,6 +115,10 @@ export default async function PerfilBarberiaPage({
   const barberos = (b.barberos ?? []) as unknown as Barbero[];
   const certificaciones = (b.certificaciones ?? []) as unknown as Certificacion[];
   const cupones = (b.cupones_descuento ?? []) as unknown as Cupon[];
+  // Decisión 8 de ARCHITECTURE.md: sin suscripción vigente, el sello de
+  // calidad deja de mostrarse como Gold/Silver/En Verificación, aunque el
+  // perfil siga visible en el directorio.
+  const suscripcionVigente = b.estado_suscripcion === "activa" || b.estado_suscripcion === "prueba";
   const puedeReservar = Boolean(b.telefono_whatsapp);
 
   const certificacionActiva =
@@ -196,7 +200,9 @@ export default async function PerfilBarberiaPage({
             {horarios ? <OpenNowBadge horarios={horarios} /> : null}
             {certificacionActiva || reconocimientosActivos.length > 0 ? (
               <div className="float-badge b2">
-                {certificacionActiva ? (
+                {!suscripcionVigente ? (
+                  <SealBadge estado="no-vigente" />
+                ) : certificacionActiva ? (
                   <SealBadge
                     estado="sello"
                     nombreSello={certificacionActiva.catalogo_sellos?.nombre_sello ?? "Certificado"}

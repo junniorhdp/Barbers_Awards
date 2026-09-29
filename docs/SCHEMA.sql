@@ -1,5 +1,5 @@
 -- =============================================================================
--- BARBERS AWARD  ·  SCHEMA.sql  (MVP v1.6)
+-- BARBERS AWARD  ·  SCHEMA.sql  (MVP v1.7)
 -- Base de datos: Supabase (PostgreSQL + Auth + Storage)
 --
 -- Cómo aplicarlo:
@@ -64,6 +64,13 @@
 -- tiene sentido para 'calidad' (es lo que mapea a barberias.estado_sello).
 -- certificaciones.categoria (nueva, copiada del sello al emitir) permite que
 -- el índice único de "una activa a la vez" se limite a categoria = 'calidad'.
+--
+-- Cambios de la v1.7 respecto a la v1.6 (Fase 8, ver sección 12 al final del
+-- archivo): transacciones_pago.wompi_reference (decisión 6 cerrada) y el
+-- pg_cron diario que marca estado_suscripcion = 'vencida' (decisión 8
+-- cerrada). El pago de Wompi (CU-12) solo activa/renueva estado_suscripcion
+-- (decisión 7 cerrada) — el sello de calidad sigue siendo un acto aparte del
+-- staff en CU-18, sin relación con el pago.
 -- =============================================================================
 
 begin;
@@ -1044,5 +1051,45 @@ drop index if exists uq_certificaciones_activa_por_barberia;
 create unique index if not exists uq_certificaciones_calidad_activa_por_barberia
   on public.certificaciones (barberia_id)
   where estado = 'activo' and categoria = 'calidad';
+
+commit;
+
+
+-- =============================================================================
+-- 12. MIGRACIÓN v1.7 — Wompi (CU-12), decisiones 6 y 8 de ARCHITECTURE.md
+--
+--     · transacciones_pago.wompi_reference (decisión 6, cerrada): hasta ahora
+--       la referencia de Wompi solo vivía codificada en el texto
+--       (BA_<barberia_id>_<plan>_<timestamp>) y se decodificaba al vuelo
+--       (lib/wompi.ts, parseReference). Se guarda también literal para poder
+--       auditar pagos a mano en Supabase sin tener que decodificarla.
+--     · pg_cron de vencimiento (decisión 8, cerrada): hasta ahora no existía
+--       ningún proceso que marcara estado_suscripcion = 'vencida' cuando
+--       pasaba fecha_vencimiento_suscripcion — quedaba 'activa' para
+--       siempre. Se agrega el job diario documentado en ARCHITECTURE.md 3.6.
+--       Si pg_cron no está activado en el proyecto, activarlo primero en
+--       Database → Extensions del dashboard de Supabase; extension_schema
+--       puede variar según el proyecto.
+--     · Decisión de producto (aprobada): cuando estado_suscripcion no es
+--       'activa' ni 'prueba', el perfil sigue visible (no se oculta del
+--       directorio) pero el sello de calidad se muestra como "no vigente"
+--       — ver SealBadge, barberia/[id]/page.tsx y BarberiaCard. No requiere
+--       cambios de esquema, solo de la aplicación.
+-- =============================================================================
+
+begin;
+
+alter table public.transacciones_pago
+  add column if not exists wompi_reference text;
+
+create extension if not exists pg_cron;
+
+select cron.schedule(
+  'expirar-suscripciones', '0 5 * * *',
+  $$ update public.barberias
+     set estado_suscripcion = 'vencida'
+     where estado_suscripcion = 'activa'
+       and fecha_vencimiento_suscripcion < now() $$
+);
 
 commit;

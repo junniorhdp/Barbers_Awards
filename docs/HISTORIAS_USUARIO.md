@@ -2,7 +2,7 @@
 
 **Proyecto:** Barbers Awards
 
-**Versión:** 1.2, alineada con `docs/USE_CASES.md` v2.2 y `docs/SCHEMA.sql` v1.3
+**Versión:** 1.3
 
 **Formato:** Como [actor], quiero [acción], para [beneficio]. Con criterios de aceptación en formato Dado / Cuando / Entonces.
 
@@ -234,7 +234,7 @@ Este documento no reemplaza a `USE_CASES.md`: los casos de uso describen el sist
 | --- | --- |
 | Caso de uso relacionado | CU-12 |
 | Actor | Dueño de Barbería |
-| Prioridad MVP piloto | Could (en el piloto se activa manualmente desde el panel de admin; ver ARCHITECTURE.md 7) |
+| Prioridad MVP piloto | Should (Fase 8: integración real con Wompi construida — ya no se activa manualmente desde el panel de admin) |
 
 **Criterios de aceptación:**
 - Dado que elijo un plan (Mensual o Anual) en `/dashboard/checkout`, cuando confirmo, entonces se abre el widget de pago de Wompi con el monto correcto.
@@ -375,3 +375,4 @@ Este documento no reemplaza a `USE_CASES.md`: los casos de uso describen el sist
 | 1.0 | Primera versión: 20 historias de usuario, una por cada caso de uso de USE_CASES.md v1.1, con prioridad MoSCoW sugerida para el piloto |
 | 1.1 | Renumeración de CU-09B/CU-09C/CU-10/CU-11/CU-11B/CU-12 a CU-17 según USE_CASES.md v2.2. La historia 7 (reserva por WhatsApp) reescrita: ahora pide nombre y teléfono, y avisa si el cupón elegido ya se usó, sin que la reserva se caiga por eso. La historia 14 gana vigencia y tope de usos. Nueva historia 15: redimir un cupón en el local, con su propio tope y reversa si el staff se equivoca. La historia 16 ya distingue de verdad "cupones copiados" de "cupones redimidos" (antes era la misma cifra con dos nombres). La historia 20 sube de Could a Should: el catálogo de sellos ya es una tabla real desde SCHEMA.sql v1.3, no queda pendiente de un futuro hardcodeo. |
 | 1.2 | Los identificadores pasan de "HU-01" a números simples (1, 2, 3...). El ítem que antes era "HU-14B" (insertado entre HU-14 y HU-15) pasa a ser la historia 15, y todo lo que venía después se corre en uno (HU-15 a HU-20 → 16 a 21). |
+| 1.3 | Historia 13 (Fase 8): se quita la nota "Could... en el piloto se activa manualmente desde el panel de admin" — ya no aplica, se construyó la integración real con Wompi (CU-12). Sube de Could a Should. Se quita del encabezado la referencia a una versión específica de `USE_CASES.md`/`SCHEMA.sql`: este documento no se ha revisado línea por línea contra cada fase desde la v1.2, así que esa cifra ya no era confiable. |

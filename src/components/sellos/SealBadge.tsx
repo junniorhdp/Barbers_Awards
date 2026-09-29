@@ -3,6 +3,7 @@ import { oscurecer, colorTextoLegible } from "@/lib/color";
 
 type Props =
   | { estado: "en-verificacion" }
+  | { estado: "no-vigente" }
   | { estado: "sello"; nombreSello: string; folio: string; colorHex: string | null; vencido: boolean };
 
 const COLOR_POR_DEFECTO = "#D4AF37"; // gold, si catalogo_sellos.color_hex es nulo (2.4)
@@ -15,6 +16,18 @@ export function SealBadge(props: Props) {
     return (
       <span className="inline-flex items-center gap-1 rounded-full border border-violet-neon px-3 py-1 text-xs font-medium text-violet-neon">
         En verificación
+      </span>
+    );
+  }
+
+  // ARCHITECTURE.md, decisión 8: si la suscripción no está vigente, el
+  // perfil sigue visible pero el sello de calidad deja de mostrarse como
+  // Gold/Silver/En Verificación — sin relación con el estado real del
+  // sello (CU-18), que el staff no toca por un pago vencido.
+  if (props.estado === "no-vigente") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full border border-muted px-3 py-1 text-xs font-medium text-muted">
+        Sello no vigente
       </span>
     );
   }

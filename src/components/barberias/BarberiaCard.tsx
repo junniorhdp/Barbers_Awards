@@ -9,12 +9,23 @@ type BarberiaResumen = {
   zona: string | null;
   fotos: string[];
   estado_sello: string;
+  // Opcional: no todas las consultas la traen todavía (solo el directorio).
+  // Sin ella se asume vigente, para no cambiar el comportamiento donde no
+  // se pidió (ARCHITECTURE.md, decisión 8).
+  estado_suscripcion?: string;
   // Opcional: solo el directorio la calcula hoy (CU-18/CU-19). Indicador
   // discreto, sin listar cuáles ni competir con el badge de estado_sello.
   tieneReconocimientos?: boolean;
 };
 
-function EstadoSelloTag({ estado }: { estado: string }) {
+function EstadoSelloTag({ estado, suscripcionVigente }: { estado: string; suscripcionVigente: boolean }) {
+  if (!suscripcionVigente) {
+    return (
+      <span className="rounded-full border border-muted px-2 py-0.5 text-xs font-medium text-muted">
+        No vigente
+      </span>
+    );
+  }
   if (estado === "gold") {
     return <span className="rounded-full bg-gold/15 px-2 py-0.5 text-xs font-medium text-gold">Sello Gold</span>;
   }
@@ -31,6 +42,11 @@ function EstadoSelloTag({ estado }: { estado: string }) {
 // ARCHITECTURE.md 2.4: fondo night, borde dorado, destello violeta al pasar
 // el cursor.
 export function BarberiaCard({ barberia }: { barberia: BarberiaResumen }) {
+  const suscripcionVigente =
+    barberia.estado_suscripcion === undefined ||
+    barberia.estado_suscripcion === "activa" ||
+    barberia.estado_suscripcion === "prueba";
+
   return (
     <Link
       href={`/barberia/${barberia.slug}`}
@@ -56,7 +72,7 @@ export function BarberiaCard({ barberia }: { barberia: BarberiaResumen }) {
           </p>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <EstadoSelloTag estado={barberia.estado_sello} />
+          <EstadoSelloTag estado={barberia.estado_sello} suscripcionVigente={suscripcionVigente} />
           {barberia.tieneReconocimientos ? (
             <span className="text-[11px] text-muted">+ reconocimientos</span>
           ) : null}

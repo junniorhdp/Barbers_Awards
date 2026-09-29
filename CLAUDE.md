@@ -74,4 +74,15 @@ docs/USE_CASES.md, docs/ARCHITECTURE.md, docs/SCHEMA.sql, docs/HISTORIAS_USUARIO
   sello) — no se relaja la restricción. Solo se corrigió el mensaje para no
   insinuar que todas las certificaciones que bloquean el borrado están
   vigentes: puede ser una activa o una histórica (pausada/revocada).
+- Fase 8 — Wompi (2026-09-28): precios reales en `.env.local`
+  (`PLAN_MENSUAL_PRECIO_COP=79000`, `PLAN_ANUAL_PRECIO_COP=790000`, el anual
+  equivale a 10 meses). Decisiones 6, 7 y 8 de ARCHITECTURE.md cerradas: el
+  pago de Wompi solo activa/renueva `estado_suscripcion`, nunca el sello
+  (CU-18 sigue siendo un acto aparte del staff); una suscripción vencida
+  deja el perfil visible pero el sello se muestra "no vigente" (opción
+  generosa, elegida a propósito para no ser estrictos con los primeros
+  clientes del piloto sin datos reales todavía). Las llaves de Wompi
+  Sandbox (`NEXT_PUBLIC_WOMPI_PUBLIC_KEY`, `WOMPI_INTEGRITY_SECRET`,
+  `WOMPI_EVENTS_SECRET`) quedaron en blanco en `.env.local` — hay que
+  completarlas antes de poder probar el flujo de pago real.
 - (agrega aquí cada decisión nueva que cierres, con fecha)

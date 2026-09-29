@@ -3,7 +3,7 @@
 | Campo | Detalle |
 | --- | --- |
 | Proyecto | Barbers Awards |
-| Versión | 1.4 (MVP) |
+| Versión | 1.5 (MVP) |
 | Documentos relacionados | `docs/USE_CASES.md` (casos de uso) y `docs/SCHEMA.sql` (base de datos) |
 | Audiencia | Desarrolladores y Claude Code |
 
@@ -140,6 +140,7 @@ Mapeo de estados de la base de datos a etiquetas públicas:
 | `barberias.estado_sello` | `gold` / `silver` | Sello Gold / Sello Silver |
 | `barberias.estado_sello` | `pendiente` | En verificación |
 | `barberias.estado_sello` | `inactivo` | No se lista en el directorio |
+| `barberias.estado_suscripcion` | distinto de `activa` y `prueba` (`vencida`/`cancelada`) | Sello no vigente (Fase 8, decisión 8) — el perfil sigue visible, solo el sello deja de mostrarse como Gold/Silver/En Verificación |
 
 ### 2.5 Compresión de imágenes en el cliente
 
@@ -1043,7 +1044,7 @@ Vercel verifica esos registros y emite el certificado SSL automáticamente; no h
 
 ## 7. Decisiones abiertas y pendientes
 
-Puntos donde los casos de uso o el esquema aún no definen todo lo que la aplicación necesita. Las filas 1, 3, 4, 5 y 11 quedaron resueltas y se conservan por trazabilidad; la 2 quedó resuelta solo en parte.
+Puntos donde los casos de uso o el esquema aún no definen todo lo que la aplicación necesita. Las filas 1, 3, 4, 5, 6, 7, 8 y 11 quedaron resueltas y se conservan por trazabilidad; la 2 quedó resuelta solo en parte.
 
 | # | Tema | Situación actual | Propuesta |
 | --- | --- | --- | --- |
@@ -1052,9 +1053,9 @@ Puntos donde los casos de uso o el esquema aún no definen todo lo que la aplica
 | 3 | Vigencia de cupones (CU-13) | **Resuelto en v1.3.** `cupones_descuento.fecha_fin` ya existe. La política pública de RLS solo filtra por `es_activo`, así que la consulta del perfil (3.7) agrega el filtro de vigencia con `.or('fecha_fin.is.null,fecha_fin.gt.<ahora>')` | — |
 | 4 | Catálogo de sellos (CU-19) | **Resuelto en v1.3.** Tabla `catalogo_sellos`, referenciada desde `certificaciones.sello_id`, sembrada con Gold y Silver por defecto | — |
 | 5 | Aprobación de postulaciones (CU-17) | **Resuelto en la Fase 6 (SCHEMA.sql v1.5).** | Columna `barberias.estado_postulacion` (`pendiente`/`aprobada`/`rechazada`) + `motivo_rechazo`. `barberias_select_public` ahora exige `estado_sello <> 'inactivo' AND estado_postulacion = 'aprobada'`: una barbería nueva ya no es pública hasta que el staff la aprueba en `/admin/postulaciones`. Aprobar no emite sello (eso sigue siendo CU-18) |
-| 6 | Referencia de Wompi | No se guarda; hoy va codificada en la referencia | Columna `wompi_reference` en `transacciones_pago` |
-| 7 | Efecto del pago sobre el sello (CU-12 y CU-18) | CU-12 dice "sello activado", CU-18 dice que el staff lo asigna | Recomendado: el pago activa la membresía; el sello depende de la auditoría del staff |
-| 8 | Suscripción vencida | No está definido qué ve el público | Sugerido: mantener el perfil y ocultar o marcar como no vigente el sello |
+| 6 | Referencia de Wompi | **Resuelto en la Fase 8 (SCHEMA.sql v1.7).** | Columna `transacciones_pago.wompi_reference`, guardada literal además de codificada en la referencia — permite auditar pagos a mano en Supabase sin decodificarla |
+| 7 | Efecto del pago sobre el sello (CU-12 y CU-18) | **Resuelto en la Fase 8, como se recomendaba.** | El webhook de Wompi (`/api/webhooks/wompi`) solo activa o renueva `estado_suscripcion`. El sello Gold/Silver sigue siendo un acto aparte del staff en CU-18, sin relación con el pago — ya era así desde la Fase 6 (el trigger de `barberias` protege `estado_sello` de cualquiera que no sea admin) |
+| 8 | Suscripción vencida | **Resuelto en la Fase 8.** | Se optó por la opción generosa: el perfil sigue visible en el directorio y la landing; el sello de calidad se muestra como "no vigente" (`SealBadge`, `BarberiaCard`) cuando `estado_suscripcion` no es `activa` ni `prueba`. Un `pg_cron` diario (`SCHEMA.sql` v1.7, sección 12) marca `vencida` cuando pasa `fecha_vencimiento_suscripcion` |
 | 9 | Confirmación de correo en el registro | Determina si el insert de la barbería puede hacerse con la sesión del usuario | Recomendado: Server Action con cliente administrador (ver 3.6) |
 | 10 | Precios y reglas de la prueba | Precios de los planes y alcance del periodo `prueba` sin definir | Definir antes de configurar `PLAN_*_PRECIO_COP` |
 | 11 | Identificador en la URL del perfil | **Resuelto en Fase 4.** El segmento `[id]` se resuelve por `slug` (mejor SEO), tal como ya lo asumía el ejemplo de consulta de la sección 3.7 | Resuelto: `.eq('slug', id)` |
@@ -1073,3 +1074,4 @@ Puntos donde los casos de uso o el esquema aún no definen todo lo que la aplica
 | 1.2 | Sincronización con `SCHEMA.sql` v1.3 y `USE_CASES.md` v2.2. Renumeración de CU-09B/CU-09C/CU-10/CU-11/CU-11B/CU-12 a CU-17 en toda la sección 3 y en 2.4, siguiendo la regla "número propio si tiene ruta propia" acordada con el equipo. `SealBadge` y la consulta del perfil (3.7) usan `catalogo_sellos` en vez de un nivel de sello fijo en el código. Cupones con vigencia (`fecha_fin`) filtrada también en la consulta pública, no solo en RLS. Sección 4.2 reescrita: el selector de WhatsApp ahora captura nombre y teléfono, valida con `cupon_ya_usado()` y respeta `limite_usos` antes de crear el lead (Opción 4 + Opción 2 de antiabuso); nueva sección 4.2.6 sobre cómo se redime un cupón (CU-14) marcando el lead como convertido. Decisiones 2 (parcial), 3 y 4 marcadas resueltas; nueva decisión 16 sobre cómo el dueño ubica el lead correcto al redimir. |
 | 1.3 | Sección 6 renombrada a "Despliegue e Infraestructura": nueva 6.1 documentando que el dominio (`barbersawards.com`) se administra en Hostinger/HostGator solo para DNS (registros A y CNAME hacia Vercel), mientras la aplicación corre íntegramente en Vercel. Corrección menor: la lista de verificación decía "8 tablas", ya eran 9 desde la v1.2 (se agregó `catalogo_sellos`). |
 | 1.4 | `catalogo_sellos.categoria` (SCHEMA.sql v1.6) separa el nivel de calidad (Gold/Silver, sigue excluyente) de certificaciones adicionales tipo "Bioseguridad" (`categoria = 'reconocimiento'`, se acumulan sin límite, nunca tocan `barberias.estado_sello`). Nuevo componente `ReconocimientosBadge` ("+N más" junto a `SealBadge`, con modal a `/verificar/[folio]`). `/admin/certificaciones` gestiona ambas categorías por separado. La regla "un sello activo a la vez" (CU-18, historia 19) se corrige: aplica solo al nivel de calidad. |
+| 1.5 | Fase 8: integración real de Wompi (CU-12) — `lib/wompi.ts`, `/api/wompi/signature`, `/api/webhooks/wompi`, `/dashboard/checkout` con sondeo de `estado_suscripcion` en vez de confiar en la URL de retorno. Decisiones 6, 7 y 8 cerradas: `transacciones_pago.wompi_reference` (SCHEMA.sql v1.7), el pago solo activa/renueva la suscripción (el sello sigue siendo de CU-18), y una suscripción vencida deja el perfil visible con el sello marcado "no vigente". Nuevo `pg_cron` diario que marca `vencida`. |
