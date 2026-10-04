@@ -21,9 +21,11 @@ export function parseReference(ref: string): { barberiaId: string; plan: PlanTip
 
 // SHA-256 hex de: referencia + monto en centavos + moneda + secreto de
 // integridad (firma que el cliente usa para abrir el widget de Wompi).
+// .trim() por si .env.local cargó un espacio o salto de línea invisible al
+// final del secreto — eso rompe la firma sin ningún error visible aquí.
 export const integritySignature = (reference: string, amountInCents: number, currency = "COP") =>
   createHash("sha256")
-    .update(`${reference}${amountInCents}${currency}${process.env.WOMPI_INTEGRITY_SECRET}`)
+    .update(`${reference}${amountInCents}${currency}${(process.env.WOMPI_INTEGRITY_SECRET ?? "").trim()}`)
     .digest("hex");
 
 // Forma real del evento que envía Wompi al webhook (ARCHITECTURE.md 4.1.3).
@@ -63,7 +65,7 @@ export function verifyWompiEvent(evt: WompiEvent): boolean {
   if (valores.some((v) => v === undefined || v === null)) return false;
 
   const esperado = createHash("sha256")
-    .update(`${valores.join("")}${evt.timestamp}${process.env.WOMPI_EVENTS_SECRET}`)
+    .update(`${valores.join("")}${evt.timestamp}${(process.env.WOMPI_EVENTS_SECRET ?? "").trim()}`)
     .digest("hex");
   const recibido = String(evt.signature.checksum).toLowerCase();
 
