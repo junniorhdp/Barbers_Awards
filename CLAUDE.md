@@ -1,7 +1,9 @@
 # Barbers Awards — Instrucciones del proyecto
 
 Documentos de referencia (léelos cuando la tarea lo requiera):
-docs/USE_CASES.md, docs/ARCHITECTURE.md, docs/SCHEMA.sql, docs/HISTORIAS_USUARIO.md
+docs/USE_CASES.md, docs/ARCHITECTURE.md, docs/SCHEMA.sql, docs/HISTORIAS_USUARIO.md,
+docs/ESTADO_ACTUAL.md (dónde quedó el proyecto: completado, bloqueantes, pendientes —
+léelo primero si retomas el proyecto después de una pausa)
 
 ## Reglas
 - Stack: Next.js (App Router) + TypeScript, Tailwind, Supabase (@supabase/ssr),
@@ -74,15 +76,31 @@ docs/USE_CASES.md, docs/ARCHITECTURE.md, docs/SCHEMA.sql, docs/HISTORIAS_USUARIO
   sello) — no se relaja la restricción. Solo se corrigió el mensaje para no
   insinuar que todas las certificaciones que bloquean el borrado están
   vigentes: puede ser una activa o una histórica (pausada/revocada).
-- Fase 8 — Wompi (2026-09-28): precios reales en `.env.local`
-  (`PLAN_MENSUAL_PRECIO_COP=79000`, `PLAN_ANUAL_PRECIO_COP=790000`, el anual
-  equivale a 10 meses). Decisiones 6, 7 y 8 de ARCHITECTURE.md cerradas: el
-  pago de Wompi solo activa/renueva `estado_suscripcion`, nunca el sello
-  (CU-18 sigue siendo un acto aparte del staff); una suscripción vencida
-  deja el perfil visible pero el sello se muestra "no vigente" (opción
-  generosa, elegida a propósito para no ser estrictos con los primeros
-  clientes del piloto sin datos reales todavía). Las llaves de Wompi
-  Sandbox (`NEXT_PUBLIC_WOMPI_PUBLIC_KEY`, `WOMPI_INTEGRITY_SECRET`,
-  `WOMPI_EVENTS_SECRET`) quedaron en blanco en `.env.local` — hay que
-  completarlas antes de poder probar el flujo de pago real.
+- Fase 8 — Wompi (2026-09-28, actualizado 2026-10-04): precios reales del
+  piloto en `.env.local` — Mensual `PLAN_MENSUAL_PRECIO_COP=79000`, Anual
+  `PLAN_ANUAL_PRECIO_COP=790000` (el anual equivale a 10 meses, 2 de
+  descuento). Tres reglas de negocio cerradas (decisiones 6, 7 y 8 de
+  ARCHITECTURE.md):
+  1. El pago de Wompi **nunca otorga ni toca el sello**: solo activa o
+     renueva `estado_suscripcion`. El sello Gold/Silver sigue siendo un
+     acto aparte del staff en CU-18 (`/admin/certificaciones`).
+  2. Una suscripción vencida (`estado_suscripcion` distinto de `activa`/
+     `prueba`) deja el **perfil visible** en el directorio y la landing,
+     pero el sello se muestra como "no vigente" (`SealBadge`,
+     `BarberiaCard`) — opción generosa, elegida a propósito para no ser
+     estrictos con los primeros clientes del piloto sin datos reales
+     todavía.
+  3. `transacciones_pago.wompi_reference` (SCHEMA.sql v1.7) guarda la
+     referencia de Wompi también literal (no solo codificada), para poder
+     auditar pagos a mano en Supabase.
+
+  Estado al 2026-10-04: las llaves de Wompi en `.env.local` ya están
+  completas y correctamente formateadas como Sandbox (`pub_test_`,
+  `test_integrity_`, `test_events_`, `prv_test_`), verificado carácter por
+  carácter — **no** es (ya no es) un problema de llaves mezcladas con
+  producción. El bloqueante real pendiente es un 403 de CloudFront al
+  abrir el widget de Wompi, reproducible incluso pegando la URL del widget
+  directo en el navegador (fuera de la app) — confirma que es externo a
+  este repo. Detalle completo y pasos de diagnóstico ya descartados en
+  `docs/ESTADO_ACTUAL.md`.
 - (agrega aquí cada decisión nueva que cierres, con fecha)
