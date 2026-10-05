@@ -94,13 +94,19 @@ léelo primero si retomas el proyecto después de una pausa)
      referencia de Wompi también literal (no solo codificada), para poder
      auditar pagos a mano en Supabase.
 
-  Estado al 2026-10-04: las llaves de Wompi en `.env.local` ya están
-  completas y correctamente formateadas como Sandbox (`pub_test_`,
-  `test_integrity_`, `test_events_`, `prv_test_`), verificado carácter por
-  carácter — **no** es (ya no es) un problema de llaves mezcladas con
-  producción. El bloqueante real pendiente es un 403 de CloudFront al
-  abrir el widget de Wompi, reproducible incluso pegando la URL del widget
-  directo en el navegador (fuera de la app) — confirma que es externo a
-  este repo. Detalle completo y pasos de diagnóstico ya descartados en
+  Estado al 2026-10-04: flujo probado de punta a punta en Sandbox
+  (tarjeta aprobada y rechazada, PSE aprobado y rechazado), con el webhook
+  activando la suscripción y el sondeo reflejándolo en pantalla. Falta
+  Nequi, Botón Bancolombia y todo lo de producción; ver
   `docs/ESTADO_ACTUAL.md`.
+- Wompi bloquea `redirect-url` hacia localhost (2026-10-04): el WAF de
+  Wompi responde 403 de CloudFront a cualquier checkout cuyo `redirect-url`
+  apunte a `localhost` (confirmado quitando o cambiando solo ese parámetro
+  en la URL del widget). Para probar pagos en local se usa ngrok con
+  dominio estático (no Cloudflare Tunnel: el DNS está en Hostinger/
+  HostGator), con `NEXT_PUBLIC_APP_URL` apuntando al túnel y la app abierta
+  desde esa URL, no desde localhost. Sin túnel, `CheckoutManager` omite
+  `redirectUrl` para que el widget cargue — es una mejora de experiencia,
+  no un reemplazo del túnel: el retorno, el sondeo tras redirección y el
+  webhook siguen necesitándolo. Ver ARCHITECTURE.md 4.1.6.
 - (agrega aquí cada decisión nueva que cierres, con fecha)

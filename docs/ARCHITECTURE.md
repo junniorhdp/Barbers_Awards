@@ -602,6 +602,7 @@ const checkout = new (window as any).WidgetCheckout({
   reference,
   publicKey: process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY,
   signature: { integrity: signature },
+  // se omite si NEXT_PUBLIC_APP_URL apunta a localhost (ver 4.1.6)
   redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/checkout`,
 });
 checkout.open(() => { /* solo experiencia de usuario: la verdad la fija el webhook */ });
@@ -792,6 +793,15 @@ Endurecimiento opcional: si dos webhooks del mismo pago llegaran exactamente a l
 
 Usa el ambiente Sandbox de Wompi con sus llaves de prueba (`pub_test_...`) y sus datos de prueba oficiales para simular pagos aprobados y rechazados. Para recibir webhooks en local, expón `localhost` con un túnel (por ejemplo ngrok o Cloudflare Tunnel) y registra esa URL como URL de eventos del Sandbox. También puedes probar directamente en un despliegue Preview de Vercel.
 
+**El túnel también es obligatorio para el `redirectUrl`, no solo para el webhook** (confirmado 2026-10-04). El WAF de Wompi (CloudFront) responde `403 Request blocked` a cualquier checkout cuyo `redirect-url` apunte a `localhost`, antes de mostrar el widget. Montaje para pruebas locales completas:
+
+1. Túnel con URL fija: ngrok con dominio estático (`ngrok http 3000 --url=<dominio>.ngrok-free.app`). Se eligió sobre Cloudflare Tunnel porque sus túneles rápidos cambian de URL en cada arranque y los túneles con nombre exigen tener el DNS en Cloudflare.
+2. `NEXT_PUBLIC_APP_URL=https://<dominio>.ngrok-free.app` en `.env.local` y reiniciar `next dev`. `next.config.ts` lee esa variable para `allowedDevOrigins` (Next bloquea en desarrollo las peticiones desde otros hosts).
+3. URL de eventos del Sandbox en Wompi: `https://<dominio>.ngrok-free.app/api/webhooks/wompi`.
+4. Usar la app **desde la URL del túnel**, no desde `localhost`: la sesión de Supabase y el `sessionStorage` que retoma el sondeo son por origen.
+
+Sin túnel (`NEXT_PUBLIC_APP_URL` en `localhost`), `CheckoutManager` omite `redirectUrl` para que el widget al menos cargue; no hay retorno automático para Nequi/PSE ni llega el webhook, así que no sirve para probar el flujo completo.
+
 ### 4.2 WhatsApp Inteligente (CU-05 y CU-06)
 
 > **Cambio de diseño (SCHEMA.sql v1.3).** Hasta la v1.1, el botón de WhatsApp no pedía ningún dato del cliente: copiar el cupón y reservar eran dos pasos independientes y de cero fricción. Desde que `leads_whatsapp` guarda `nombre_cliente` y `telefono_cliente` (`NOT NULL`) para poder evitar que un mismo teléfono redima el mismo cupón dos veces (ver la sección de antiabuso de cupones más abajo), reservar por WhatsApp ya no es de un solo clic: el selector pide nombre y teléfono antes de construir el mensaje. Es una fricción nueva, asumida a propósito, no un efecto secundario oculto.
@@ -970,7 +980,7 @@ Un lead representa un clic hacia WhatsApp, no una reserva confirmada. El dashboa
 | `WOMPI_EVENTS_SECRET` | Servidor | Sí | Secreto de eventos para verificar el webhook (`test_events_...` o `prod_events_...`) |
 | `WOMPI_PRIVATE_KEY` | Servidor | Opcional | Llave privada (`prv_...`); solo si se consulta la API de Wompi para verificar transacciones |
 | `WOMPI_API_URL` | Servidor | Opcional | `https://sandbox.wompi.co/v1` o `https://production.wompi.co/v1` |
-| `NEXT_PUBLIC_APP_URL` | Público | Sí | URL base del sitio (`redirectUrl` de Wompi, canonical y Open Graph) |
+| `NEXT_PUBLIC_APP_URL` | Público | Sí | URL base del sitio (`redirectUrl` de Wompi, canonical y Open Graph). En local, la URL HTTPS del túnel para probar pagos (4.1.6) |
 | `PLAN_MENSUAL_PRECIO_COP` | Servidor | Sí | Precio del plan Mensual en pesos (por definir) |
 | `PLAN_ANUAL_PRECIO_COP` | Servidor | Sí | Precio del plan Anual en pesos (por definir) |
 | `NEXT_PUBLIC_WHATSAPP_COUNTRY_CODE` | Público | No | Código de país por defecto; valor `57` |
