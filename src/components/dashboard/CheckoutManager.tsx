@@ -18,7 +18,7 @@ type WidgetCheckoutOptions = {
   reference: string;
   publicKey: string;
   signature: { integrity: string };
-  redirectUrl: string;
+  redirectUrl?: string;
 };
 type WidgetCheckoutInstance = { open: (callback: () => void) => void };
 declare global {
@@ -38,6 +38,22 @@ const FORMATTER_FECHA = new Intl.DateTimeFormat("es-CO", { dateStyle: "long", ti
 const CLAVE_SESSION_STORAGE = "ba_checkout_pendiente";
 const INTERVALO_MS = 3000;
 const INTENTOS_MAXIMOS = 20; // ~60s (ARCHITECTURE.md 4.1.1, paso 7)
+
+// El WAF de Wompi (CloudFront) responde 403 a cualquier checkout cuyo
+// redirect-url apunte a localhost. Sin túnel HTTPS se omite el parámetro
+// (es opcional): el widget carga, pero no hay retorno automático para
+// Nequi/PSE (ARCHITECTURE.md 4.1.6).
+function redirectUrlPublica(): string | undefined {
+  const base = process.env.NEXT_PUBLIC_APP_URL;
+  if (!base) return undefined;
+  try {
+    const { hostname } = new URL(base);
+    if (hostname === "localhost" || hostname === "127.0.0.1") return undefined;
+  } catch {
+    return undefined;
+  }
+  return `${base}/dashboard/checkout`;
+}
 
 function ESTADO_LABEL(s: string) {
   if (s === "activa") return "Activa";
@@ -143,13 +159,14 @@ export function CheckoutManager({
         return;
       }
 
+      const redirectUrl = redirectUrlPublica();
       const checkout = new window.WidgetCheckout({
         currency: "COP",
         amountInCents: data.amountInCents,
         reference: data.reference,
         publicKey: process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY ?? "",
         signature: { integrity: data.signature },
-        redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/checkout`,
+        ...(redirectUrl ? { redirectUrl } : {}),
       });
       checkout.open(() => {
         // Solo experiencia de usuario: la verdad la fija el webhook.
