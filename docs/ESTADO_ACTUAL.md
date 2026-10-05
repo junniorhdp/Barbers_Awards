@@ -29,8 +29,9 @@ abiertas) y el historial de versiones en la cabecera de `SCHEMA.sql`.
 - **Fase 8** — Pagos con Wompi (CU-12). `lib/wompi.ts`,
   `/api/wompi/signature`, `/api/webhooks/wompi`, `/dashboard/checkout` con
   sondeo de `estado_suscripcion`. SCHEMA.sql v1.7:
-  `transacciones_pago.wompi_reference` + `pg_cron` de vencimiento. Precios
-  reales: Mensual $79.000, Anual $790.000. **Probado de punta a punta en
+  `transacciones_pago.wompi_reference` + `pg_cron` de vencimiento (ambos
+  aplicados; el cron `expirar-suscripciones` corre a diario, `0 5 * * *`
+  UTC = medianoche en Colombia, verificado 2026-10-04). Precios reales: Mensual $79.000, Anual $790.000. **Probado de punta a punta en
   Sandbox el 2026-10-04** (ver abajo).
 
 ## ✅ Wompi: 403 de CloudFront resuelto y flujo de pago probado en Sandbox
@@ -66,10 +67,6 @@ de producción en Wompi (es distinta de la de Sandbox).
 
 ## Pendiente de confirmar
 
-- **`pg_cron` de vencimiento de suscripciones (SCHEMA.sql v1.7)**: la
-  columna `transacciones_pago.wompi_reference` de esa migración ya está
-  aplicada (confirmado 2026-10-04), pero no se verificó aparte que el
-  trabajo de `pg_cron` esté programado y corriendo.
 - **Formato de las llaves de Supabase en `.env.local`**: en algún punto
   cambiaron de el formato nuevo (`sb_publishable_...` / `sb_secret_...`) al
   formato JWT legacy (`eyJhbGci...`, con `role: anon` / `role: service_role`
