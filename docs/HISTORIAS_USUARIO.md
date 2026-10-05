@@ -290,6 +290,8 @@ Este documento no reemplaza a `USE_CASES.md`: los casos de uso describen el sist
 - Dado que filtro por un rango de fechas (últimos 7 o 30 días), cuando aplico el filtro, entonces las cifras se recalculan para ese periodo.
 - Dado que reviso mis métricas de cupones, cuando las interpreto, entonces "cupones copiados" y "cupones redimidos" me muestran cosas distintas y reales: cuántas veces se copió el código en el perfil, y cuántas veces se confirmó de verdad en el local (15) — ya no es la misma cifra con dos nombres.
 
+**Nota de implementación (2026-10-04):** `/dashboard` muestra "Reservas con cupón" en lugar de "cupones copiados" (copiar un código sin reservar no deja registro) y la tarjeta de visitas dice "Próximamente": no existe todavía una tabla de visitas. El filtro de 7/30 días cuenta por fecha de la reserva, no de la redención.
+
 ## 3. Administrador / Staff (Barbers Awards)
 
 ### 17: Iniciar sesión en el panel administrativo
@@ -376,3 +378,4 @@ Este documento no reemplaza a `USE_CASES.md`: los casos de uso describen el sist
 | 1.1 | Renumeración de CU-09B/CU-09C/CU-10/CU-11/CU-11B/CU-12 a CU-17 según USE_CASES.md v2.2. La historia 7 (reserva por WhatsApp) reescrita: ahora pide nombre y teléfono, y avisa si el cupón elegido ya se usó, sin que la reserva se caiga por eso. La historia 14 gana vigencia y tope de usos. Nueva historia 15: redimir un cupón en el local, con su propio tope y reversa si el staff se equivoca. La historia 16 ya distingue de verdad "cupones copiados" de "cupones redimidos" (antes era la misma cifra con dos nombres). La historia 20 sube de Could a Should: el catálogo de sellos ya es una tabla real desde SCHEMA.sql v1.3, no queda pendiente de un futuro hardcodeo. |
 | 1.2 | Los identificadores pasan de "HU-01" a números simples (1, 2, 3...). El ítem que antes era "HU-14B" (insertado entre HU-14 y HU-15) pasa a ser la historia 15, y todo lo que venía después se corre en uno (HU-15 a HU-20 → 16 a 21). |
 | 1.3 | Historia 13 (Fase 8): se quita la nota "Could... en el piloto se activa manualmente desde el panel de admin" — ya no aplica, se construyó la integración real con Wompi (CU-12). Sube de Could a Should. Se quita del encabezado la referencia a una versión específica de `USE_CASES.md`/`SCHEMA.sql`: este documento no se ha revisado línea por línea contra cada fase desde la v1.2, así que esa cifra ya no era confiable. |
+| 1.4 | Historia 16 (CU-15): nota de implementación — "Reservas con cupón" en vez de "cupones copiados", visitas pendiente ("Próximamente") y el filtro de rango cuenta por fecha de la reserva. |

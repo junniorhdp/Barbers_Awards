@@ -5,8 +5,13 @@ Resumen de continuidad, no la fuente de verdad técnica. Para detalle real:
 abiertas) y el historial de versiones en la cabecera de `SCHEMA.sql`.
 
 **Última actualización:** 2026-10-04.
+- **CU-15** — Métricas del dueño en `/dashboard` (2026-10-04). Tres
+  tarjetas calculadas desde `leads_whatsapp`, sin tablas nuevas: clics a
+  WhatsApp, reservas con cupón y cupones redimidos en el local, con filtro
+  de 7 días / 30 días / todo (`?rango=`). El filtro cuenta por fecha de
+  creación del lead: no existe una columna con la fecha de redención.
 
-## Completado (Fases 4 a 8, todo commiteado y pusheado a `main`)
+## Completado (Fases 4 a 8 y CU-15, todo commiteado y pusheado a `main`)
 
 - **Fase 4** — Landing, directorio, perfil público. `docs/referencias/perfil-plantilla.html`
   convertida a React, aislada en `.perfil`. Sistema de acento/logo
@@ -77,10 +82,11 @@ de producción en Wompi (es distinta de la de Sandbox).
 
 ## Pendiente de construir
 
-- **CU-15** (dashboard de métricas del dueño — leads, visitas, cupones
-  redimidos): `/dashboard/page.tsx` sigue siendo el placeholder de la
-  Fase 1. (CU-19 y CU-20, las métricas y el catálogo de sellos del lado
-  **admin**, ya están construidos desde la Fase 6 — no confundir con esta.)
+- **Visitas al perfil** (la cuarta tarjeta de CU-15): `/dashboard` la
+  muestra como "Próximamente". Medirla requiere una tabla nueva de eventos
+  de visita y decidir cómo se registra (el perfil público se sirve desde
+  caché), así que necesita una migración aprobada aparte. Decisión abierta
+  2 de `ARCHITECTURE.md`.
 
 ## Decisiones abiertas conocidas (sin resolver a propósito)
 

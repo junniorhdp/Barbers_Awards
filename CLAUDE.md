@@ -109,4 +109,17 @@ léelo primero si retomas el proyecto después de una pausa)
   `redirectUrl` para que el widget cargue — es una mejora de experiencia,
   no un reemplazo del túnel: el retorno, el sondeo tras redirección y el
   webhook siguen necesitándolo. Ver ARCHITECTURE.md 4.1.6.
+- CU-15, métricas del dueño (2026-10-04): `/dashboard` se construyó sin
+  migración, solo con `leads_whatsapp`. Tres decisiones:
+  1. "Visitas al perfil" queda fuera y la tarjeta dice "Próximamente" (a
+     propósito, para que se lea como decisión y no como algo roto). Medirla
+     requiere una tabla nueva y decidir cómo registrar la visita en una
+     página servida desde caché; se propondrá como migración aparte.
+  2. La tarjeta se llama "Reservas con cupón" (leads con `cupon_id`), no
+     "Cupones copiados": copiar un código sin reservar no deja registro, y
+     no se promete una medición que no existe.
+  3. El filtro de 7/30 días cuenta por `leads_whatsapp.creado_en`. No hay
+     fecha de redención, así que un cupón redimido se suma en el periodo en
+     que se reservó; la pantalla lo explica con un texto de ayuda cuando
+     hay un rango activo.
 - (agrega aquí cada decisión nueva que cierres, con fecha)
