@@ -117,6 +117,11 @@ dominio real, que todavía no existe (ver "Bloqueado por fuera del equipo").
 - **Cerrar sesión y navegación del admin** (commit `fe0cb39`): botón de
   cerrar sesión en los dos paneles y barra de navegación en `/admin`, cuyas
   secciones antes solo se alcanzaban escribiendo la URL.
+- **Servicios destacados primero** (commit `8b361e1`): marcar un servicio
+  como destacado pintaba la cinta "Popular" pero no lo movía. La consulta
+  del perfil público ahora ordena por destacado y después por el orden
+  manual del dueño (también el selector de reserva por WhatsApp, que usa la
+  misma lista). `/dashboard/servicios` conserva el orden manual.
 
 ## Bloqueado por fuera del equipo
 
@@ -152,8 +157,6 @@ planeación, no un hecho: al 2026-10-16 el dominio no está comprado. Lo
 
 ## Mejoras detectadas en la prueba, sin hacer
 
-- La opción "Destacado" de un servicio no lo reordena: sigue en orden de
-  creación.
 - Las fotos y certificados de un barbero solo se pueden agregar editándolo
   después de crearlo, no al crearlo.
 - No se puede elegir qué foto va al hero: toma la primera, y se repite en
