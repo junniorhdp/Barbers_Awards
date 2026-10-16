@@ -7,10 +7,24 @@ export function HorariosEditor({ valorInicial }: { valorInicial: Horarios }) {
   const [horarios, setHorarios] = useState<Horarios>(valorInicial);
 
   function alternarAbierto(dia: (typeof DIAS)[number]) {
-    setHorarios((prev) => ({
-      ...prev,
-      [dia]: { ...prev[dia], abierto: !prev[dia].abierto },
-    }));
+    setHorarios((prev) => {
+      const abierto = !prev[dia].abierto;
+      return {
+        ...prev,
+        [dia]: {
+          abierto,
+          // Un día "abierto" sin franjas se muestra como "Cerrado" en el perfil
+          // público (textoDia en lib/horarios.ts). Al marcarlo se siembra una
+          // franja por defecto para que el estado guardado signifique lo que el
+          // dueño cree que significa. Al desmarcarlo se conservan las franjas,
+          // por si vuelve a marcarlo.
+          franjas:
+            abierto && prev[dia].franjas.length === 0
+              ? ([["09:00", "18:00"]] as [string, string][])
+              : prev[dia].franjas,
+        },
+      };
+    });
   }
 
   function agregarFranja(dia: (typeof DIAS)[number]) {

@@ -27,7 +27,25 @@ const HorarioDiaSchema = z.object({
   franjas: z.array(FranjaSchema),
 });
 
-export const HorariosSchema = z.record(z.enum(DIAS), HorarioDiaSchema);
+// Red de seguridad si el dueño quita a mano todas las franjas de un día
+// abierto. Va en el registro y no en HorarioDiaSchema porque aquí se conoce
+// la llave del día, para nombrarlo en el mensaje. Solo valida el formulario
+// (PerfilSchema): las filas ya guardadas se leen sin este esquema, así que
+// no se rompen.
+export const HorariosSchema = z
+  .record(z.enum(DIAS), HorarioDiaSchema)
+  .superRefine((horarios, ctx) => {
+    for (const dia of DIAS) {
+      const valor = horarios[dia];
+      if (valor?.abierto && valor.franjas.length === 0) {
+        ctx.addIssue({
+          code: "custom",
+          path: [dia],
+          message: `${DIA_LABELS[dia]} está marcado como abierto pero no tiene horario. Agrégale una franja o desmárcalo.`,
+        });
+      }
+    }
+  });
 
 export type Horarios = z.infer<typeof HorariosSchema>;
 
