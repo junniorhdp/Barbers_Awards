@@ -8,7 +8,9 @@ léelo primero si retomas el proyecto después de una pausa)
 ## Reglas
 - Stack: Next.js (App Router) + TypeScript, Tailwind, Supabase (@supabase/ssr),
   Wompi, Vercel. El dominio y DNS los administra Hostinger/HostGator
-  (ARCHITECTURE.md 6.1); no afecta cómo se construye la app.
+  (ARCHITECTURE.md 6.1); no afecta cómo se construye la app. Ojo: al
+  2026-10-16 `barbersawards.com` todavía no se ha adquirido (ASECOP está en
+  eso); hoy producción vive en `barbers-awards.vercel.app`.
 - Sigue las rutas, carpetas y nombres de ARCHITECTURE.md. No inventes tablas ni
   columnas: si falta algo, propón la migración y espera mi aprobación.
 - La RLS de SCHEMA.sql es la barrera de seguridad real. service_role solo en
@@ -122,4 +124,20 @@ léelo primero si retomas el proyecto después de una pausa)
      fecha de redención, así que un cupón redimido se suma en el periodo en
      que se reservó; la pantalla lo explica con un texto de ayuda cuando
      hay un rango activo.
+- Horarios: un día abierto exige al menos una franja (2026-10-16, commit
+  `cf6a0cf`). Antes se podía guardar `{abierto: true, franjas: []}`, que
+  `textoDia()` muestra como "Cerrado" (y `agruparHorarios()` colapsaba los
+  siete días en "Lunes – Domingo: Cerrado"). `HorariosEditor` siembra
+  09:00–18:00 al marcar un día y conserva las franjas al desmarcarlo. La
+  validación va en `HorariosSchema` con `superRefine` (no en
+  `HorarioDiaSchema`), porque ahí se conoce la llave del día y el mensaje
+  puede nombrarlo. Solo valida el formulario (`PerfilSchema`): las filas
+  ya guardadas se leen sin ese esquema. `textoDia()`, `agruparHorarios()`
+  y `estaAbiertoAhora()` no se tocaron: su lógica era correcta.
+- El mensaje genérico de login oculta el error real (2026-10-16): CU-08 A1
+  muestra "Correo o contraseña incorrectos" ante *cualquier* fallo de
+  `signInWithPassword`, no solo credenciales malas. En producción ocultó
+  un 404 causado por `NEXT_PUBLIC_SUPABASE_URL` con `/rest/v1` de más.
+  Antes de asumir que son las credenciales, revisar **Supabase → Logs →
+  Auth Logs**, que muestra el error real.
 - (agrega aquí cada decisión nueva que cierres, con fecha)

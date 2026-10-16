@@ -1019,6 +1019,8 @@ Reglas:
 
 ### 6.1 Dominio y DNS: Hostinger/HostGator → Vercel
 
+> **Estado al 2026-10-16:** esta sección es el plan, no el estado actual. `barbersawards.com` todavía no se ha adquirido (ASECOP está en eso); hoy producción vive en `barbers-awards.vercel.app`.
+
 El dominio oficial (`barbersawards.com`) se compra y se administra en el proveedor de hosting contratado (Hostinger o HostGator). Eso es lo único que hace ese proveedor: **no aloja la aplicación**. Next.js, los Server Components, los Route Handlers y las funciones Serverless corren únicamente en Vercel.
 
 El tráfico llega a Vercel mediante registros DNS configurados en el panel de Hostinger/HostGator:
