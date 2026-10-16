@@ -101,6 +101,9 @@ export default async function PerfilBarberiaPage({
     `,
     )
     .eq("slug", slug)
+    // Destacados primero; entre ellos, el orden manual del dueño. Solo en el
+    // perfil público: /dashboard/servicios conserva el orden manual tal cual.
+    .order("destacado", { referencedTable: "servicios", ascending: false })
     .order("orden", { referencedTable: "servicios", ascending: true })
     .or(`fecha_fin.is.null,fecha_fin.gt.${ahoraISO}`, { referencedTable: "cupones_descuento" })
     .maybeSingle();
