@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { cerrarSesion } from "@/app/(auth)/actions";
 
 const ENLACES = [
   { href: "/dashboard", label: "Métricas" },
@@ -40,6 +41,12 @@ export default async function DashboardLayout({
             {enlace.label}
           </a>
         ))}
+        <form action={cerrarSesion} className="ml-auto">
+          <input type="hidden" name="destino" value="/" />
+          <button type="submit" className="text-sm text-muted hover:text-gold">
+            Cerrar sesión
+          </button>
+        </form>
       </nav>
       {children}
     </div>

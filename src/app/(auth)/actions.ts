@@ -147,3 +147,14 @@ export async function registrarBarberia(
   // Paso 5
   redirect("/dashboard");
 }
+
+export async function cerrarSesion(formData: FormData) {
+  const destino = formData.get("destino");
+  // Lista blanca: nunca redirigir a una ruta que venga del formulario sin
+  // validar (mismo criterio que sanitizeNext en este archivo).
+  const salida = destino === "/admin/login" ? "/admin/login" : "/";
+
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect(salida);
+}
