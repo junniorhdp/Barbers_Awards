@@ -169,4 +169,17 @@ las decisiones de diseño abiertas)
   treinta perfiles con el mismo poste); la foto es lo único propio de cada
   una. Alto con `min-height` (no 100vh); la foto carga con prioridad (LCP);
   sin foto queda el fondo oscuro con el acento. Ver `docs/DESIGN.md` 8.3.
+- Calidad fotográfica (2026-10-19, D3 de `docs/DESIGN.md`): se exige foto
+  de calidad para estar en Barbers Awards. La decisión está cerrada; la
+  implementación no. Tres niveles:
+  1. Medible, en el código: la portada exige mínimo 1600 × 900 px y
+     horizontal, validado sobre el original antes de comprimir. **Hecho**
+     (SCHEMA.sql v1.8).
+  2. Subjetivo, en la auditoría de `/admin/postulaciones`. **Pendiente**:
+     esa pantalla no muestra la portada, así que el staff aprueba sin ver la
+     foto que debería juzgar.
+  3. Contractual: escrito donde la barbería lo lea antes de pagar.
+     **Pendiente**.
+  No dar por hecho que la política funciona: hoy solo se cumple el mínimo
+  técnico. Ver `docs/DESIGN.md` sección 10.
 - (agrega aquí cada decisión nueva que cierres, con fecha)

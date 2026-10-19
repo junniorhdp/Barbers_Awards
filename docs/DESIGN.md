@@ -349,13 +349,20 @@ El diseño solo puede llegar hasta donde llegue la foto. La diferencia de
 calidad percibida entre este perfil y uno de gama alta está más en las
 imágenes que en el CSS.
 
-**Decisión abierta (D3):** cómo se garantiza la calidad fotográfica. Dos
-caminos planteados, sin decidir: que un mínimo fotográfico sea parte de la
-auditoría del sello, o incluir una sesión de fotos en el plan anual. Es
-decisión de negocio, no de diseño, pero condiciona el resultado visual más
-que cualquier otra cosa de este documento.
+**Política (D3, decidida el 2026-10-19):** se exige foto de calidad para
+estar en Barbers Awards. **La decisión está cerrada; la implementación no.**
+Se garantiza en tres niveles:
 
-Mientras tanto, el diseño debe **degradar con dignidad**: una barbería con
+| Nivel | Qué cubre | Estado |
+|---|---|---|
+| Medible, en el código | La portada exige mínimo 1600 × 900 px y horizontal, validado sobre el archivo original antes de comprimir (`ImageUploader`) | **Hecho** (SCHEMA.sql v1.8) |
+| Subjetivo, en la auditoría | El staff juzga la calidad de la foto en `/admin/postulaciones` | **Pendiente:** esa pantalla no muestra la portada, así que hoy el staff aprueba sin ver la foto que debería juzgar |
+| Contractual | La exigencia está escrita donde la barbería la lea antes de pagar | **Pendiente** |
+
+Hasta que los dos niveles pendientes existan, solo se cumple el mínimo
+técnico: una foto de 1600 × 900 puede ser horizontal y aun así mala.
+
+Además, el diseño debe **degradar con dignidad**: una barbería con
 tres fotos regulares no puede verse rota, solo más sobria.
 
 ---
@@ -378,7 +385,7 @@ sin un destino claro, el resultado es una mezcla.
 |---|---|---|
 | D1 | Reemplazar Poppins por una sans con más carácter | Sin decidir |
 | D2 | Botón píldora con degradado vs. botón plano | Resuelta el 2026-10-19: opción B, botón plano (ver 6.1 y 6.6) |
-| D3 | Cómo se garantiza la calidad fotográfica | Decisión de negocio |
+| D3 | Cómo se garantiza la calidad fotográfica | Resuelta el 2026-10-19: se exige foto de calidad (ver 10). Falta el mecanismo de auditoría y el nivel contractual |
 | D4 | Referencia de Refero Styles para la plataforma | Sin elegir |
 
-D1, D3 y D4 siguen abiertas.
+D1 y D4 siguen abiertas.

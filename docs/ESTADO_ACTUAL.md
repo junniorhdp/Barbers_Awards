@@ -4,16 +4,17 @@ Resumen de continuidad, no la fuente de verdad técnica. Para detalle real:
 `CLAUDE.md` ("Decisiones tomadas"), `ARCHITECTURE.md` (sección 7, decisiones
 abiertas) y el historial de versiones en la cabecera de `SCHEMA.sql`.
 
-**Última actualización:** 2026-10-16.
+**Última actualización:** 2026-10-19.
 
 **En una línea:** la app está desplegada en Vercel
 (`barbers-awards.vercel.app`) con su propio proyecto de Supabase de
-producción, y la prueba completa en producción pasó 8 de 8. El dominio
+producción, y la prueba completa en producción pasó 8 de 8. El rediseño del
+perfil público (2026-10-19) está hecho y desplegado. El dominio
 `barbersawards.com` todavía no se ha adquirido (bloqueado por fuera del
 equipo), y falta todo lo necesario para cobrarle a clientes reales. Los
 pagos solo se han probado en Sandbox, nunca en producción.
 
-## Completado (Fases 4 a 8, CU-15 y despliegue, todo commiteado y pusheado a `main`)
+## Completado (Fases 4 a 8, CU-15, despliegue y rediseño del perfil, todo commiteado y pusheado a `main`)
 
 - **Fase 4** — Landing, directorio, perfil público. `docs/referencias/perfil-plantilla.html`
   convertida a React, aislada en `.perfil`. Sistema de acento/logo
@@ -123,6 +124,48 @@ dominio real, que todavía no existe (ver "Bloqueado por fuera del equipo").
   manual del dueño (también el selector de reserva por WhatsApp, que usa la
   misma lista). `/dashboard/servicios` conserva el orden manual.
 
+## ✅ Rediseño del perfil público (2026-10-19)
+
+Siete commits, todos en `main` y desplegados en producción:
+
+- **`8f7e592`** — `docs/DESIGN.md` creado y referenciado; D2 cerrada con la
+  opción B (botón plano).
+- **`622ed56`** — `perfil.css` migrado al lenguaje plano: botones con
+  esquina de 2px, relleno sólido, sin degradado ni sombra de color. Escala
+  de radios nueva: píldora para lo que etiqueta, plano para lo que se toca.
+- **`906a533`** — `prefers-reduced-motion` ahora cubre los hovers.
+  **Lección:** el bloque está al **final** de `perfil.css` a propósito.
+  Puesto al principio perdía por especificidad contra los hovers definidos
+  más abajo, y parecía funcionar sin hacer nada.
+- **`6c7a35e`** — el botón del encabezado se cortaba en móvil
+  (`white-space: nowrap` con el texto completo); ahora tiene una etiqueta
+  corta por debajo de 760px.
+- **`8d7cf5e`** — SCHEMA.sql v1.8: `barberias.foto_portada`. **Aplicada en
+  desarrollo y en producción, verificada en ambos.** La portada tiene
+  exigencia propia (mínimo 1600 × 900, horizontal, validado sobre el
+  original antes de comprimir) y techo propio (2000px / 600 KB, contra
+  1600px / 300 KB de la galería). Sin portada, el perfil usa `fotos[0]`.
+  `BarberiaCard` del directorio y de la landing también la usan.
+- **`b39a7d0`** — los avatares del equipo se comprimían a 1600px para
+  mostrarse a 88px; ahora a 512px.
+- **`97a8230`** — el hero pasa a foto de portada a sangre completa con velo
+  oscuro. Se eliminó el poste de barbero y su CSS. El sello va en una
+  tarjeta sobre la foto y ahora se ve también en móvil. "Nosotros" muestra
+  una foto de galería distinta a la del hero. Incluye el truncado del nombre
+  en la barra para que la hamburguesa no se salga a 360px.
+
+**Probado en el navegador:** portada clara, sin ninguna foto, los cuatro
+acentos, 360px y 320px, y nombre largo.
+
+**Decisiones de producto cerradas hoy:**
+- **D3 (calidad fotográfica):** se exige foto de calidad para estar en
+  Barbers Awards. El mecanismo tiene tres niveles: lo medible en el código
+  (medidas y orientación), lo subjetivo en la auditoría de
+  `/admin/postulaciones` y lo contractual. **Ojo: el nivel de la auditoría
+  NO está implementado** (ver "Mejoras detectadas, sin hacer").
+- **Poste de barbero eliminado:** era idéntico en todas las barberías; la
+  foto es lo único propio de cada una.
+
 ## Bloqueado por fuera del equipo
 
 - **`barbersawards.com` todavía NO se ha adquirido.** El dueño del proyecto
@@ -155,14 +198,23 @@ planeación, no un hecho: al 2026-10-16 el dominio no está comprado. Lo
   real.
 - **Términos de uso y política de tratamiento de datos** publicados.
 
-## Mejoras detectadas en la prueba, sin hacer
+## Mejoras detectadas, sin hacer
 
+- **`/admin/postulaciones` NO muestra la foto de portada.** El staff aprueba
+  sin ver la foto que se supone que debe auditar. Esto rompe el mecanismo de
+  D3.
+- **Al reemplazar una portada, el archivo anterior queda huérfano en
+  Storage.** Ocurre en **cada** reemplazo, que es una acción normal, no un
+  fallo.
+- Los íconos de contacto son emojis (📍 📞) y el botón de WhatsApp usa un
+  ícono genérico, no el glifo oficial.
 - Las fotos y certificados de un barbero solo se pueden agregar editándolo
   después de crearlo, no al crearlo.
-- No se puede elegir qué foto va al hero: toma la primera, y se repite en
-  la galería.
 - El correo de confirmación usa la plantilla por defecto de Supabase.
 - `/verificar/[folio]` funciona, pero está visualmente pobre.
+- **Propuesta sin hacer:** separar la foto de "Nosotros" en su propia
+  columna (`foto_nosotros`, v1.9). Hoy toma una de la galería por una regla
+  que el dueño no controla.
 
 ## Frontend
 
@@ -171,18 +223,16 @@ planeación, no un hecho: al 2026-10-16 el dominio no está comprado. Lo
   y sello. Toma de Barbería Lords los patrones de reserva por servicio y por
   profesional, la ficha de servicio con duración y precio, y las preguntas
   frecuentes.
-- `docs/DESIGN.md` ya existe: el sistema visual, los dos temas (plataforma
-  y perfil público) y las decisiones de diseño. D2 quedó resuelta el
-  2026-10-19 con la opción B (botón plano, esquina de 2px). **Pendiente:
-  migrar `perfil.css` al lenguaje nuevo** (hoy sigue con el botón píldora
-  con degradado). D1, D3 y D4 siguen abiertas.
+- `docs/DESIGN.md` existe y está aplicado al perfil. D2 resuelta (botón
+  plano). Siguen abiertas: **D1** (reemplazar Poppins), **D3** (cerrada como
+  política, falta el mecanismo de auditoría) y **D4** (referencia de Refero
+  para la plataforma, sin elegir).
 - **Hallazgo:** la densidad visual de Barbería Lords viene sobre todo de
   fotografía profesional y de elementos de confianza (calificación, conteo
   de reseñas, testimonios, contadores) que este proyecto no puede replicar
   sin inventar datos — justo lo que la decisión 13 de `ARCHITECTURE.md`
-  eliminó a propósito. La propuesta es que el sello cargue ese peso. Queda
-  abierto si la calidad fotográfica debe ser parte de la auditoría o del
-  plan anual.
+  eliminó a propósito. La propuesta es que el sello cargue ese peso. Lo de
+  la calidad fotográfica se cerró el 2026-10-19 como D3 (ver arriba).
 
 ## Pendiente de confirmar
 
