@@ -13,7 +13,7 @@ export default async function DashboardPerfilPage() {
   const { data: barberia } = await supabase
     .from("barberias")
     .select(
-      "id, direccion, ciudad, zona, telefono_whatsapp, instagram_url, facebook_url, eslogan, descripcion, historia, anio_fundacion, color_acento, logo_preset, horarios, fotos",
+      "id, direccion, ciudad, zona, telefono_whatsapp, instagram_url, facebook_url, eslogan, descripcion, historia, anio_fundacion, color_acento, logo_preset, horarios, fotos, foto_portada",
     )
     .eq("owner_id", user!.id)
     .single();

@@ -144,32 +144,47 @@ Mapeo de estados de la base de datos a etiquetas públicas:
 
 ### 2.5 Compresión de imágenes en el cliente
 
-Toda imagen se convierte a WebP y pesa menos de 300 KB antes de subirse a Supabase Storage. Los PDF de diplomas no se comprimen (límite del bucket: 10 MB).
+Toda imagen se convierte a WebP antes de subirse a Supabase Storage, con dos niveles de techo (SCHEMA.sql v1.8):
+
+| Imagen | Lado máximo | Peso máximo | Validación previa |
+| --- | --- | --- | --- |
+| Foto de portada (`foto_portada`) | 2000px | 600 KB | Mínimo 1600 × 900 px, horizontal |
+| Fotos de galería (`fotos`) y avatares | 1600px | 300 KB | Ninguna |
+
+La validación de medidas corre sobre el archivo original, antes de comprimir (`ImageUploader`): después de la compresión el mínimo ya no se podría comprobar. Los PDF de diplomas no se comprimen (límite del bucket: 10 MB).
 
 ```ts
 // lib/image-compression.ts
 'use client';
 import imageCompression from 'browser-image-compression';
 
-const MAX_BYTES = 300 * 1024;
+export const MAX_BYTES_ESTANDAR = 300 * 1024;
+export const MAX_BYTES_PORTADA = 600 * 1024;
 
-export async function compressToWebp(file: File, maxDim = 1600): Promise<File> {
+export async function compressToWebp(
+  file: File,
+  maxDim = 1600,
+  maxBytes = MAX_BYTES_ESTANDAR,
+): Promise<File> {
   if (file.type === 'application/pdf') return file;
 
+  const maxSizeMB = (maxBytes / (1024 * 1024)) * 0.97;
   let quality = 0.8;
   let out = file;
   for (let i = 0; i < 4; i++) {
     out = await imageCompression(file, {
-      maxSizeMB: 0.29,
-      maxWidthOrHeight: maxDim,      // 1600 fotos del local, 512 avatares
+      maxSizeMB,
+      maxWidthOrHeight: maxDim,      // 2000 portada, 1600 fotos del local, 512 avatares
       useWebWorker: true,
       fileType: 'image/webp',
       initialQuality: quality,
     });
-    if (out.size <= MAX_BYTES) break;
+    if (out.size <= maxBytes) break;
     quality -= 0.15;
   }
-  if (out.size > MAX_BYTES) throw new Error('La imagen no se pudo reducir a menos de 300 KB');
+  if (out.size > maxBytes) {
+    throw new Error(`La imagen no se pudo reducir a menos de ${Math.round(maxBytes / 1024)} KB`);
+  }
   return out;
 }
 ```
@@ -185,7 +200,7 @@ const { error } = await supabase.storage
   .upload(path, webpFile, { contentType: 'image/webp', cacheControl: '31536000', upsert: false });
 ```
 
-Convención de rutas: `{barberia_id}/fotos/`, `{barberia_id}/barberos/{barbero_id}/avatar.webp` y `{barberia_id}/barberos/{barbero_id}/diploma-N.pdf`. En la base de datos se guarda la ruta relativa y la URL pública se construye al renderizar. Para que `next/image` cargue estas imágenes hay que autorizar el dominio:
+Convención de rutas: `{barberia_id}/portada/`, `{barberia_id}/fotos/`, `{barberia_id}/barberos/{barbero_id}/avatar.webp` y `{barberia_id}/barberos/{barbero_id}/diploma-N.pdf`. En la base de datos se guarda la ruta relativa y la URL pública se construye al renderizar. Para que `next/image` cargue estas imágenes hay que autorizar el dominio:
 
 ```ts
 // next.config.ts

@@ -93,7 +93,7 @@ export default async function PerfilBarberiaPage({
       `
       id, nombre, slug, eslogan, descripcion, historia, anio_fundacion,
       direccion, ciudad, zona, telefono_whatsapp, instagram_url, facebook_url,
-      horarios, fotos, color_acento, logo_preset, estado_suscripcion,
+      horarios, fotos, foto_portada, color_acento, logo_preset, estado_suscripcion,
       servicios ( id, nombre, descripcion, precio, duracion_min, icono, destacado, orden ),
       barberos ( id, nombre, foto_avatar, experiencia_anos, especialidades, diplomas_urls ),
       certificaciones ( folio_verificacion, categoria, estado, fecha_emision, fecha_vencimiento, catalogo_sellos ( nombre_sello, nivel, color_hex ) ),
@@ -114,6 +114,9 @@ export default async function PerfilBarberiaPage({
   const logoPreset = esLogoValido(b.logo_preset) ? b.logo_preset : "tijeras";
   const horarios = b.horarios && Object.keys(b.horarios).length === 7 ? b.horarios : null;
   const fotos: string[] = b.fotos ?? [];
+  // SCHEMA.sql v1.8: la portada es aparte de la galería. Sin portada, se usa
+  // la primera foto de la galería para no romper las barberías existentes.
+  const portada: string | null = b.foto_portada ?? fotos[0] ?? null;
   const servicios = (b.servicios ?? []) as unknown as Servicio[];
   const barberos = (b.barberos ?? []) as unknown as Barbero[];
   const certificaciones = (b.certificaciones ?? []) as unknown as Certificacion[];
@@ -146,7 +149,7 @@ export default async function PerfilBarberiaPage({
   const { inicio: tituloInicio, ultima: tituloUltima } = resaltarUltimaPalabra(tituloPortada);
   const subtitulo = subtituloEncabezado(b.anio_fundacion, b.zona, b.ciudad);
 
-  const hayNosotros = Boolean(b.historia) || fotos.length > 0 || especialidadesUnicas.length > 0;
+  const hayNosotros = Boolean(b.historia) || portada !== null || especialidadesUnicas.length > 0;
 
   return (
     <div className={`perfil ${playfair.variable} ${poppins.variable}`} data-accent={acento}>
@@ -239,9 +242,9 @@ export default async function PerfilBarberiaPage({
         <section className="about" id="nosotros">
           <div className="container about-grid">
             <div className="about-visual reveal">
-              {fotos[0] ? (
+              {portada ? (
                 <Image
-                  src={publicStorageUrl(fotos[0])}
+                  src={publicStorageUrl(portada)}
                   alt={`Foto principal de ${b.nombre}`}
                   fill
                   sizes="(max-width: 980px) 100vw, 45vw"

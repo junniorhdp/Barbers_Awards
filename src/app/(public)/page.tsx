@@ -10,6 +10,7 @@ type BarberiaDestacada = {
   ciudad: string;
   zona: string | null;
   fotos: string[];
+  foto_portada: string | null;
   estado_sello: string;
 };
 
@@ -33,7 +34,7 @@ async function obtenerDestacadas(): Promise<SeccionDestacadas> {
   // como "destacada" aquí.
   const { data: certificadas } = await supabase
     .from("certificaciones")
-    .select("fecha_emision, barberias ( id, nombre, slug, ciudad, zona, fotos, estado_sello )")
+    .select("fecha_emision, barberias ( id, nombre, slug, ciudad, zona, fotos, foto_portada, estado_sello )")
     .eq("estado", "activo")
     .eq("categoria", "calidad")
     .order("fecha_emision", { ascending: false })
@@ -49,7 +50,7 @@ async function obtenerDestacadas(): Promise<SeccionDestacadas> {
 
   const { data: recientes } = await supabase
     .from("barberias")
-    .select("id, nombre, slug, ciudad, zona, fotos, estado_sello")
+    .select("id, nombre, slug, ciudad, zona, fotos, foto_portada, estado_sello")
     .neq("estado_sello", "inactivo")
     .order("created_at", { ascending: false })
     .limit(6);

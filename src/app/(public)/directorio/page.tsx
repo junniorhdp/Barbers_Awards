@@ -34,7 +34,7 @@ async function buscarBarberias(params: ParametrosBusqueda) {
   let consulta = supabase
     .from("barberias")
     .select(
-      "id, nombre, slug, ciudad, zona, fotos, estado_sello, estado_suscripcion, certificaciones ( estado, categoria )",
+      "id, nombre, slug, ciudad, zona, fotos, foto_portada, estado_sello, estado_suscripcion, certificaciones ( estado, categoria )",
     )
     .neq("estado_sello", "inactivo");
 

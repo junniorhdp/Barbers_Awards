@@ -8,6 +8,8 @@ type BarberiaResumen = {
   ciudad: string;
   zona: string | null;
   fotos: string[];
+  // SCHEMA.sql v1.8. Sin portada, la tarjeta usa la primera foto de la galería.
+  foto_portada: string | null;
   estado_sello: string;
   // Opcional: no todas las consultas la traen todavía (solo el directorio).
   // Sin ella se asume vigente, para no cambiar el comportamiento donde no
@@ -53,9 +55,9 @@ export function BarberiaCard({ barberia }: { barberia: BarberiaResumen }) {
       className="group block overflow-hidden rounded-xl border border-gold/40 bg-night transition hover:border-gold hover:shadow-glow-violet"
     >
       <div className="relative aspect-video bg-carbon">
-        {barberia.fotos[0] ? (
+        {(barberia.foto_portada ?? barberia.fotos[0]) ? (
           <Image
-            src={publicStorageUrl(barberia.fotos[0])}
+            src={publicStorageUrl(barberia.foto_portada ?? barberia.fotos[0])}
             alt={barberia.nombre}
             fill
             sizes="(max-width: 768px) 100vw, 33vw"

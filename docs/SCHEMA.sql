@@ -1,5 +1,5 @@
 -- =============================================================================
--- BARBERS AWARD  ·  SCHEMA.sql  (MVP v1.7)
+-- BARBERS AWARD  ·  SCHEMA.sql  (MVP v1.8)
 -- Base de datos: Supabase (PostgreSQL + Auth + Storage)
 --
 -- Cómo aplicarlo:
@@ -71,6 +71,12 @@
 -- cerrada). El pago de Wompi (CU-12) solo activa/renueva estado_suscripcion
 -- (decisión 7 cerrada) — el sello de calidad sigue siendo un acto aparte del
 -- staff en CU-18, sin relación con el pago.
+--
+-- Cambios de la v1.8 respecto a la v1.7 (ver sección 13 al final del
+-- archivo): barberias.foto_portada, una foto aparte de la galería (fotos)
+-- con exigencia y techo de peso propios. Nullable a propósito: si es NULL,
+-- el perfil público usa fotos[0] como antes. Columna común: no la protege
+-- barberias_guard_privileged_columns() y no cambia ninguna política RLS.
 -- =============================================================================
 
 begin;
@@ -1091,5 +1097,33 @@ select cron.schedule(
      where estado_suscripcion = 'activa'
        and fecha_vencimiento_suscripcion < now() $$
 );
+
+commit;
+
+
+-- =============================================================================
+-- 13. MIGRACIÓN v1.8 — foto de portada separada de la galería
+--
+--     · Hasta ahora la foto principal del perfil era fotos[0], "la primera de
+--       la galería": una regla invisible para el dueño, y esa foto se
+--       repetía en la galería. Además toda imagen se comprime a 1600px /
+--       300 KB, lo que la deja blanda si se muestra en grande.
+--     · foto_portada guarda la ruta relativa en Storage
+--       (<barberia_id>/portada/<uuid>.webp), igual que fotos. No entra en el
+--       arreglo fotos. Mínimo 1600x900 horizontal y techo 2000px / 600 KB,
+--       validados en el navegador (ImageUploader), no aquí.
+--     · Nullable: las barberías existentes siguen usando fotos[0].
+--     · No toca RLS ni el trigger de columnas protegidas: el dueño ya puede
+--       actualizar su fila por barberias_update_owner, y las políticas del
+--       bucket solo exigen que la primera carpeta sea su barbería.
+-- =============================================================================
+
+begin;
+
+alter table public.barberias
+  add column if not exists foto_portada text;
+
+comment on column public.barberias.foto_portada is
+  'Ruta relativa en barberias-storage de la foto de portada (SCHEMA.sql v1.8). NULL = el perfil usa fotos[0].';
 
 commit;

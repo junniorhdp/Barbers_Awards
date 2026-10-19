@@ -150,4 +150,15 @@ las decisiones de diseño abiertas)
   Los degradados decorativos del hero se quedan: son ilustración, no
   acabado de control. `perfil.css` todavía tiene el botón píldora con
   degradado; migrarlo es una tarea aparte. Ver `docs/DESIGN.md` sección 6.
+- Foto de portada separada de la galería (2026-10-19, SCHEMA.sql v1.8):
+  `barberias.foto_portada`, nullable. Antes la foto principal del perfil
+  era `fotos[0]` ("la primera de la galería"), una regla invisible para el
+  dueño que además repetía esa foto en la galería, y toda imagen se
+  comprimía a 1600px / 300 KB, lo que la dejaba blanda en grande. Ahora la
+  portada se sube aparte a `<barberiaId>/portada/` y no entra en `fotos`.
+  Dos techos (`lib/image-compression.ts`): portada 2000px / 600 KB; galería
+  y avatares 1600px / 300 KB. La portada exige mínimo 1600 × 900 px y
+  horizontal, validado sobre el archivo original antes de comprimir
+  (`ImageUploader`). Si `foto_portada` es null, el perfil usa `fotos[0]`
+  para no romper las barberías existentes. Ver ARCHITECTURE.md 2.5.
 - (agrega aquí cada decisión nueva que cierres, con fecha)

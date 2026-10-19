@@ -14,12 +14,66 @@ type Props = {
   multiple?: boolean;
   etiqueta: string;
   onSubido: (rutas: string[]) => void;
+  // Límites de compresión (por defecto los de compressToWebp: 1600px / 300 KB).
+  maxDim?: number;
+  maxBytes?: number;
+  // Validación del archivo original; si se omite, se acepta cualquier medida.
+  minAncho?: number;
+  minAlto?: number;
+  requiereHorizontal?: boolean;
 };
+
+function leerDimensiones(archivo: File): Promise<{ ancho: number; alto: number }> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(archivo);
+    const img = new Image();
+    img.onload = () => {
+      resolve({ ancho: img.naturalWidth, alto: img.naturalHeight });
+      URL.revokeObjectURL(url);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error(`No se pudo leer la imagen "${archivo.name}". Prueba con un JPG, PNG o WebP.`));
+    };
+    img.src = url;
+  });
+}
 
 // ARCHITECTURE.md 2.5 y 3.4: comprime en el navegador (salvo PDF) y sube con
 // la sesión del dueño; las políticas RLS del bucket validan que el primer
 // segmento de la ruta sea una barbería suya.
-export function ImageUploader({ barberiaId, carpeta, accept, multiple, etiqueta, onSubido }: Props) {
+export function ImageUploader({
+  barberiaId,
+  carpeta,
+  accept,
+  multiple,
+  etiqueta,
+  onSubido,
+  maxDim,
+  maxBytes,
+  minAncho,
+  minAlto,
+  requiereHorizontal,
+}: Props) {
+  const validaDimensiones = Boolean(minAncho || minAlto || requiereHorizontal);
+
+  // Corre sobre el archivo ORIGINAL, antes de comprimir: la compresión reduce
+  // la imagen y el mínimo ya no se podría comprobar.
+  async function validar(archivo: File) {
+    if (!validaDimensiones || archivo.type === "application/pdf") return;
+    const { ancho, alto } = await leerDimensiones(archivo);
+    const medida = `${ancho} × ${alto} px`;
+
+    if (requiereHorizontal && ancho <= alto) {
+      throw new Error(`La imagen mide ${medida} y no es horizontal. Usa una foto más ancha que alta.`);
+    }
+    if ((minAncho && ancho < minAncho) || (minAlto && alto < minAlto)) {
+      throw new Error(
+        `La imagen mide ${medida}. Se necesita al menos ${minAncho ?? 0} × ${minAlto ?? 0} px.`,
+      );
+    }
+  }
+
   const [subiendo, setSubiendo] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,11 +83,15 @@ export function ImageUploader({ barberiaId, carpeta, accept, multiple, etiqueta,
     setError(null);
 
     try {
+      const lista = Array.from(archivos);
+      // Se valida todo antes de subir nada, para no dejar subidas a medias.
+      for (const archivo of lista) await validar(archivo);
+
       const supabase = createClient();
       const rutas: string[] = [];
 
-      for (const archivo of Array.from(archivos)) {
-        const listo = await compressToWebp(archivo);
+      for (const archivo of lista) {
+        const listo = await compressToWebp(archivo, maxDim, maxBytes);
         const extension = listo.type === "application/pdf" ? "pdf" : "webp";
         const ruta = `${barberiaId}/${carpeta}/${crypto.randomUUID()}.${extension}`;
 

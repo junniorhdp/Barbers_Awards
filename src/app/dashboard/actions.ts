@@ -80,6 +80,43 @@ export async function actualizarPerfil(_prevState: FormState, formData: FormData
   return { success: true };
 }
 
+// La portada es una foto aparte de la galería (SCHEMA.sql v1.8): no entra en
+// el arreglo fotos. Como la galería, se guarda al subirla, no con el
+// formulario del perfil.
+export async function establecerPortada(ruta: string): Promise<FormState> {
+  const ctx = await contextoDueno();
+  if ("error" in ctx) return { error: ctx.error };
+  const { supabase, barberia } = ctx;
+
+  // Solo una ruta de la carpeta de portada de su propia barbería.
+  if (!ruta.startsWith(`${barberia.id}/portada/`)) return { error: "Ruta de portada inválida." };
+
+  const { error } = await supabase.from("barberias").update({ foto_portada: ruta }).eq("id", barberia.id);
+  if (error) return { error: "No se pudo guardar la foto de portada." };
+
+  revalidarPerfil(barberia.slug, "/dashboard/perfil");
+  return { success: true };
+}
+
+export async function quitarPortada(): Promise<FormState> {
+  const ctx = await contextoDueno();
+  if ("error" in ctx) return { error: ctx.error };
+  const { supabase, barberia } = ctx;
+
+  const { data: actual } = await supabase
+    .from("barberias")
+    .select("foto_portada")
+    .eq("id", barberia.id)
+    .single();
+
+  const { error } = await supabase.from("barberias").update({ foto_portada: null }).eq("id", barberia.id);
+  if (error) return { error: "No se pudo quitar la foto de portada." };
+
+  if (actual?.foto_portada) await supabase.storage.from(BUCKET).remove([actual.foto_portada]);
+  revalidarPerfil(barberia.slug, "/dashboard/perfil");
+  return { success: true };
+}
+
 export async function agregarFotos(rutas: string[]): Promise<FormState> {
   const ctx = await contextoDueno();
   if ("error" in ctx) return { error: ctx.error };
