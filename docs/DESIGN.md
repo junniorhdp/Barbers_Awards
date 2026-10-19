@@ -194,7 +194,8 @@ Foto, nombre, especialidad, nota breve y reserva directa con esa persona.
 ### 6.5 El sello
 
 No es un adorno: es el argumento de venta. Merece tratamiento propio —
-espacio, jerarquía y una explicación de qué significa. Ver sección 8.
+espacio, jerarquía y una explicación de qué significa. Ver sección 8, y la
+propuesta de rediseño en 13.1 (sin implementar).
 
 ### 6.6 Escala de radios
 
@@ -389,3 +390,124 @@ sin un destino claro, el resultado es una mezcla.
 | D4 | Referencia de Refero Styles para la plataforma | Sin elegir |
 
 D1 y D4 siguen abiertas.
+
+---
+
+## 13. Propuestas sin implementar
+
+**Nada de esta sección está implementado.** Son propuestas de diseño
+registradas para no perder el razonamiento. Hay una maqueta visual en el
+canvas de Claude Design con un tablero para cada una (sello, verificación y
+reserva). Cuando una se implemente, pasa a su sección correspondiente y se
+quita de aquí.
+
+### 13.1 El sello
+
+**Hoy:** `SealBadge` es una píldora con degradado y sombra de color — el
+mismo acabado que D2 quitó de los botones — y muestra solo el nombre del
+sello (por ejemplo, "Gold"). Enlaza al folio, pero no lo muestra.
+
+**La propuesta:** el sello se lee como certificación cuando trae cuatro
+cosas: **marca** (Barbers Awards), **nivel** (Gold / Silver), **entidad
+emisora** y **folio verificable**. Hoy trae una de cuatro.
+
+Estados a cubrir:
+
+| Estado | Qué significa |
+|---|---|
+| Gold / Silver | Certificación de calidad vigente |
+| En verificación | Sin nivel de calidad todavía; se dibuja con un marco tenue |
+| No vigente | La **suscripción** no está al día; no dice nada del sello (decisión 8 de `ARCHITECTURE.md`) |
+| Vencido | La certificación pasó su `fecha_vencimiento`: expiró sola. Hoy `SealBadge` lo recibe como la bandera `vencido` y lo muestra apagado |
+| Revocado | El staff retiró la certificación. Distinto de Vencido: a uno lo retiraron, el otro expiró |
+
+Los **reconocimientos adicionales** siguen como píldoras, separados del
+nivel de calidad: son etiquetas, no la certificación (6.6).
+
+Contextos donde tiene que funcionar: sobre la foto del perfil, en la
+tarjeta del directorio y en grande en la página de verificación.
+
+Las reglas 1 y 2 de la sección 2 siguen mandando: el color del sello sale
+de `catalogo_sellos.color_hex` y el acento de la barbería nunca lo tiñe.
+
+#### Problema abierto: "pendiente" significa dos cosas
+
+`certificaciones.estado` solo admite `'activo'`, `'pendiente'` y
+`'revocado'`. El estado `'pendiente'` cubre dos situaciones opuestas:
+
+- Una certificación que **nunca ha sido auditada**.
+- Una que **estaba activa y el staff suspendió**: `pausarCertificacion()`
+  (`src/app/admin/(protected)/actions.ts`) pone `'pendiente'`. Pausar
+  reutiliza el estado de "aún no auditada".
+
+En el perfil, las dos terminan como "En verificación": cuando el staff
+suspende a una barbería, el visitante lee que la están auditando, no que la
+suspendieron. **El error favorece a la barbería**, que es la peor dirección
+para un sello cuyo valor es la confianza.
+
+Matiz verificado en el código: pausar y revocar comparten
+`cambiarEstadoCertificacion()`, y en los dos casos, si era un nivel de
+calidad activo, `barberias.estado_sello` vuelve a `'pendiente'`. Por eso la
+tarjeta del directorio, que lee `estado_sello`, también muestra "En
+verificación" para una barbería **revocada**. En el hero del perfil el
+"En verificación" solo aparece si la barbería tiene reconocimientos activos;
+sin ellos, no se muestra ningún sello.
+
+Resolverlo **no es diseño**: hay que decidir si se separan los casos (un
+estado nuevo, con su migración) o si se acepta a propósito y se deja escrito
+por qué. Hasta entonces, el rediseño del sello **no puede distinguirlos**,
+porque el dato no existe.
+
+### 13.2 `/verificar/[folio]`
+
+Es el momento de máxima verdad: alguien duda y escribe el folio. **El
+veredicto debe leerse en un segundo**, y los desenlaces negativos con la
+misma claridad que el positivo.
+
+Cuatro desenlaces:
+
+1. **Vigente.**
+2. **Folio inexistente** — el caso de fraude: alguien muestra un sello que
+   no emitimos. Tiene que decirlo sin rodeos.
+3. **Revocada.**
+4. **Vencida.**
+
+**Distinción que no se negocia:** una suscripción vencida **no** invalida la
+certificación. El perfil puede mostrar el sello como "no vigente", pero esta
+página sigue diciendo la verdad sobre la auditoría. Pago y calidad son
+cosas distintas (decisión 8 de `ARCHITECTURE.md`). Hoy la página ya
+respeta esto —no consulta `estado_suscripcion`— y el rediseño tiene que
+conservarlo.
+
+"Pausada" no es un estado del esquema: `pausarCertificacion()` deja la
+certificación en `'pendiente'`, el mismo estado que una nunca auditada (ver
+"Problema abierto" en 13.1). Hoy esta página la muestra como "En proceso", igual que una nunca auditada.
+
+### 13.3 El flujo de reserva
+
+**Hoy:** `WhatsAppBookingSheet` usa `<select>` para servicio y barbero. Un
+desplegable muestra un servicio a la vez, sin precio ni duración: se elige
+a ciegas.
+
+**La propuesta:** una sola pantalla con:
+
+- Los **servicios como lista visible** (nombre, duración, precio,
+  seleccionable), no como desplegable.
+- Los **barberos** igual, como lista visible.
+- **Nombre y teléfono** debajo.
+- La **vista previa del mensaje de WhatsApp** antes de enviar.
+
+**Por qué no se copia el asistente de varios pasos de Barbería Lords:**
+ellos tienen decenas de servicios en veinte sedes; una barbería de aquí
+tiene seis servicios y tres barberos. Un asistente para elegir entre seis
+cosas agrega abandono sin agregar claridad. Las dos puertas de entrada (por
+servicio / por barbero, 8.2) se reservan para cuando una lista no quepa en
+pantalla.
+
+**Nombre y teléfono son obligatorios:** `leads_whatsapp` los exige, y el
+antiabuso de cupones depende del teléfono (`CLAUDE.md`, Opción 4 + Opción
+2).
+
+Nota de implementación: hoy la hoja de reserva recibe los servicios solo
+con `id` y `nombre`; para mostrar duración y precio hay que pasarle esos
+campos.
