@@ -3,7 +3,9 @@
 Documentos de referencia (léelos cuando la tarea lo requiera):
 docs/USE_CASES.md, docs/ARCHITECTURE.md, docs/SCHEMA.sql, docs/HISTORIAS_USUARIO.md,
 docs/ESTADO_ACTUAL.md (dónde quedó el proyecto: completado, bloqueantes, pendientes —
-léelo primero si retomas el proyecto después de una pausa)
+léelo primero si retomas el proyecto después de una pausa),
+docs/DESIGN.md (sistema visual: los dos temas —plataforma y perfil público— y
+las decisiones de diseño abiertas)
 
 ## Reglas
 - Stack: Next.js (App Router) + TypeScript, Tailwind, Supabase (@supabase/ssr),
@@ -140,4 +142,12 @@ léelo primero si retomas el proyecto después de una pausa)
   un 404 causado por `NEXT_PUBLIC_SUPABASE_URL` con `/rest/v1` de más.
   Antes de asumir que son las credenciales, revisar **Supabase → Logs →
   Auth Logs**, que muestra el error real.
+- Lenguaje de botones plano (2026-10-19, D2 de `docs/DESIGN.md`, opción
+  B): esquina de 2px, relleno sólido de `--brand`, sin degradado y sin
+  sombra de color; hover con desplazamiento de 2px hacia arriba y un leve
+  aclarado. Regla de radios: píldora para lo que etiqueta (insignias de
+  estado, sello), plano para lo que se toca (botones, campos, tarjetas).
+  Los degradados decorativos del hero se quedan: son ilustración, no
+  acabado de control. `perfil.css` todavía tiene el botón píldora con
+  degradado; migrarlo es una tarea aparte. Ver `docs/DESIGN.md` sección 6.
 - (agrega aquí cada decisión nueva que cierres, con fecha)

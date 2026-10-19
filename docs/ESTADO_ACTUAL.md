@@ -171,7 +171,11 @@ planeación, no un hecho: al 2026-10-16 el dominio no está comprado. Lo
   y sello. Toma de Barbería Lords los patrones de reserva por servicio y por
   profesional, la ficha de servicio con duración y precio, y las preguntas
   frecuentes.
-- `docs/DESIGN.md` sigue **sin escribir**.
+- `docs/DESIGN.md` ya existe: el sistema visual, los dos temas (plataforma
+  y perfil público) y las decisiones de diseño. D2 quedó resuelta el
+  2026-10-19 con la opción B (botón plano, esquina de 2px). **Pendiente:
+  migrar `perfil.css` al lenguaje nuevo** (hoy sigue con el botón píldora
+  con degradado). D1, D3 y D4 siguen abiertas.
 - **Hallazgo:** la densidad visual de Barbería Lords viene sobre todo de
   fotografía profesional y de elementos de confianza (calificación, conteo
   de reseñas, testimonios, contadores) que este proyecto no puede replicar
