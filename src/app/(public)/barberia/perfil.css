@@ -176,6 +176,8 @@
 .perfil .nav-links a:hover::after { width: 100%; }
 .perfil .nav-cta { display: flex; align-items: center; gap: 16px; }
 .perfil .nav-cta .btn { padding: 10px 22px; font-size: 13px; white-space: nowrap; }
+/* Etiqueta corta del botón del encabezado: solo por debajo de 760px. */
+.perfil .cta-corta { display: none; }
 .perfil .burger { display: none; flex-direction: column; gap: 5px; cursor: pointer; background: none; border: none; padding: 6px; }
 .perfil .burger span { width: 24px; height: 2.5px; background: var(--black); border-radius: 2px; }
 .perfil .mobile-menu { display: none; flex-direction: column; background: var(--cream); padding: 10px 24px 22px; border-bottom: 1px solid rgba(0, 0, 0, .08); }
@@ -517,6 +519,8 @@
 @media (max-width: 760px) {
   .perfil .nav-links { display: none; }
   .perfil .nav-cta .btn-outline { display: none; }
+  .perfil .cta-corta { display: inline; }
+  .perfil .cta-larga { display: none; }
   .perfil .burger { display: flex; }
   .perfil .hero { padding-top: 90px; }
   .perfil .hero-stats { gap: 22px; }
@@ -530,6 +534,7 @@
   .perfil .team-grid { grid-template-columns: 1fr; }
   .perfil .section-title { font-size: 26px; }
   .perfil .hero-btns .btn { padding: 12px 22px; font-size: 14px; }
+  .perfil .nav-cta .btn { padding: 9px 16px; font-size: 12.5px; }
 }
 
 /* ---------- movimiento reducido en los hovers ----------

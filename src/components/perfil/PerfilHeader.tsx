@@ -59,10 +59,16 @@ export function PerfilHeader({
 
         <div className="nav-cta">
           {puedeReservar ? (
-            <BotonReservar className="btn btn-gold">Reservar por WhatsApp</BotonReservar>
+            // Dos etiquetas: perfil.css muestra la corta por debajo de 760px,
+            // donde la larga no cabe junto al logo y la hamburguesa.
+            <BotonReservar className="btn btn-gold">
+              <span className="cta-corta">Reservar</span>
+              <span className="cta-larga">Reservar por WhatsApp</span>
+            </BotonReservar>
           ) : (
             <button type="button" className="btn btn-gold" disabled aria-disabled title="Sin WhatsApp configurado">
-              Reservas por WhatsApp — no disponible
+              <span className="cta-corta">No disponible</span>
+              <span className="cta-larga">Reservas por WhatsApp — no disponible</span>
             </button>
           )}
           <button
