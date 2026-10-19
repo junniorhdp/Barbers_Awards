@@ -145,6 +145,7 @@ function PanelMultimedia({ barberiaId, barbero }: { barberiaId: string; barbero:
         barberiaId={barberiaId}
         carpeta={`barberos/${barbero.id}`}
         etiqueta="Foto de perfil"
+        maxDim={512}
         onSubido={subirAvatar}
       />
 
