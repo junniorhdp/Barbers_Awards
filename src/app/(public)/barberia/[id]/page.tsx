@@ -65,7 +65,7 @@ type Cupon = {
   limite_usos: number | null;
 };
 
-// El eslogan/nombre se resalta en la última palabra con el color de acento
+// El nombre se resalta en la última palabra con el color de acento
 // (ARCHITECTURE.md 3.7, fila "Portada").
 function resaltarUltimaPalabra(texto: string) {
   const palabras = texto.trim().split(/\s+/);
@@ -117,6 +117,9 @@ export default async function PerfilBarberiaPage({
   // SCHEMA.sql v1.8: la portada es aparte de la galería. Sin portada, se usa
   // la primera foto de la galería para no romper las barberías existentes.
   const portada: string | null = b.foto_portada ?? fotos[0] ?? null;
+  // Nosotros muestra una foto distinta a la del hero: la primera de la
+  // galería que no sea `portada`. Si no queda ninguna, va solo con texto.
+  const fotoNosotros: string | null = fotos.find((foto) => foto !== portada) ?? null;
   const servicios = (b.servicios ?? []) as unknown as Servicio[];
   const barberos = (b.barberos ?? []) as unknown as Barbero[];
   const certificaciones = (b.certificaciones ?? []) as unknown as Certificacion[];
@@ -145,11 +148,12 @@ export default async function PerfilBarberiaPage({
   const experienciaTotal = barberos.reduce((total, barbero) => total + barbero.experiencia_anos, 0);
   const especialidadesUnicas = Array.from(new Set(barberos.flatMap((barbero) => barbero.especialidades)));
 
-  const tituloPortada = b.eslogan || b.nombre;
-  const { inicio: tituloInicio, ultima: tituloUltima } = resaltarUltimaPalabra(tituloPortada);
+  // El h1 del hero es el nombre; el eslogan pasa a una línea propia debajo.
+  const { inicio: tituloInicio, ultima: tituloUltima } = resaltarUltimaPalabra(b.nombre);
+  const lugar = b.zona ? `${b.zona}, ${b.ciudad}` : b.ciudad;
   const subtitulo = subtituloEncabezado(b.anio_fundacion, b.zona, b.ciudad);
 
-  const hayNosotros = Boolean(b.historia) || portada !== null || especialidadesUnicas.length > 0;
+  const hayNosotros = Boolean(b.historia) || fotoNosotros !== null || especialidadesUnicas.length > 0;
 
   return (
     <div className={`perfil ${playfair.variable} ${poppins.variable}`} data-accent={acento}>
@@ -162,13 +166,34 @@ export default async function PerfilBarberiaPage({
       <PerfilHeader nombre={b.nombre} logoPreset={logoPreset} subtitulo={subtitulo} puedeReservar={puedeReservar} />
 
       {/* ===================== HERO ===================== */}
-      <section className="hero" id="inicio">
-        <div className="container hero-grid">
-          <div>
-            <div className="hero-eyebrow">Barbería · {subtitulo}</div>
+      {/* Foto de portada a sangre completa (DESIGN.md 8). Sin ninguna foto, el
+          fondo oscuro con el acento de .hero queda como respaldo. */}
+      <section className={`hero${portada ? " hero-con-foto" : ""}`} id="inicio">
+        {portada ? (
+          <>
+            <Image
+              src={publicStorageUrl(portada)}
+              alt={`Foto de ${b.nombre}`}
+              fill
+              preload
+              sizes="100vw"
+              className="hero-foto"
+            />
+            <div className="hero-velo" aria-hidden="true" />
+          </>
+        ) : null}
+
+        <div className="container hero-contenido">
+          <div className="hero-texto">
+            <div className="hero-top">
+              {horarios ? <OpenNowBadge horarios={horarios} /> : null}
+              <span className="hero-lugar">{lugar}</span>
+            </div>
             <h1>
               {tituloInicio} <em>{tituloUltima}</em>
             </h1>
+            <span className="hero-regla" aria-hidden="true" />
+            {b.eslogan ? <p className="hero-eslogan">{b.eslogan}</p> : null}
             {b.descripcion ? <p>{b.descripcion}</p> : null}
             <div className="hero-btns">
               {servicios.length > 0 ? (
@@ -202,34 +227,24 @@ export default async function PerfilBarberiaPage({
             </div>
           </div>
 
-          <div className="hero-visual">
-            {horarios ? <OpenNowBadge horarios={horarios} /> : null}
-            {certificacionActiva || reconocimientosActivos.length > 0 ? (
-              <div className="float-badge b2">
-                {!suscripcionVigente ? (
-                  <SealBadge estado="no-vigente" />
-                ) : certificacionActiva ? (
-                  <SealBadge
-                    estado="sello"
-                    nombreSello={certificacionActiva.catalogo_sellos?.nombre_sello ?? "Certificado"}
-                    folio={certificacionActiva.folio_verificacion}
-                    colorHex={certificacionActiva.catalogo_sellos?.color_hex ?? null}
-                    vencido={vencida}
-                  />
-                ) : (
-                  <SealBadge estado="en-verificacion" />
-                )}
-                <ReconocimientosBadge reconocimientos={reconocimientosActivos} />
-              </div>
-            ) : null}
-            <div className="pole-frame">
-              <div className="pole-cap top" />
-              <div className="pole">
-                <div className="pole-stripes" />
-              </div>
-              <div className="pole-cap bottom" />
+          {certificacionActiva || reconocimientosActivos.length > 0 ? (
+            <div className="hero-sello">
+              {!suscripcionVigente ? (
+                <SealBadge estado="no-vigente" />
+              ) : certificacionActiva ? (
+                <SealBadge
+                  estado="sello"
+                  nombreSello={certificacionActiva.catalogo_sellos?.nombre_sello ?? "Certificado"}
+                  folio={certificacionActiva.folio_verificacion}
+                  colorHex={certificacionActiva.catalogo_sellos?.color_hex ?? null}
+                  vencido={vencida}
+                />
+              ) : (
+                <SealBadge estado="en-verificacion" />
+              )}
+              <ReconocimientosBadge reconocimientos={reconocimientosActivos} />
             </div>
-          </div>
+          ) : null}
         </div>
         <div className="scroll-cue">
           <span>Desliza</span>
@@ -240,18 +255,18 @@ export default async function PerfilBarberiaPage({
       {/* ===================== NOSOTROS ===================== */}
       {hayNosotros ? (
         <section className="about" id="nosotros">
-          <div className="container about-grid">
-            <div className="about-visual reveal">
-              {portada ? (
+          <div className={`container about-grid${fotoNosotros ? "" : " about-solo-texto"}`}>
+            {fotoNosotros ? (
+              <div className="about-visual reveal">
                 <Image
-                  src={publicStorageUrl(portada)}
-                  alt={`Foto principal de ${b.nombre}`}
+                  src={publicStorageUrl(fotoNosotros)}
+                  alt={`Foto de ${b.nombre}`}
                   fill
                   sizes="(max-width: 980px) 100vw, 45vw"
                   style={{ objectFit: "cover" }}
                 />
-              ) : null}
-            </div>
+              </div>
+            ) : null}
             <div className="about-text reveal">
               <span className="section-label">Nuestra Historia</span>
               <h2 className="section-title">Bienvenido a {b.nombre}</h2>

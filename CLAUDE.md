@@ -147,8 +147,8 @@ las decisiones de diseño abiertas)
   sombra de color; hover con desplazamiento de 2px hacia arriba y un leve
   aclarado. Regla de radios: píldora para lo que etiqueta (insignias de
   estado, sello), plano para lo que se toca (botones, campos, tarjetas).
-  Los degradados decorativos del hero se quedan: son ilustración, no
-  acabado de control. `perfil.css` todavía tiene el botón píldora con
+  El degradado oscuro del hero (hoy, el velo sobre la foto) se queda: es
+  ilustración, no acabado de control. `perfil.css` todavía tiene el botón píldora con
   degradado; migrarlo es una tarea aparte. Ver `docs/DESIGN.md` sección 6.
 - Foto de portada separada de la galería (2026-10-19, SCHEMA.sql v1.8):
   `barberias.foto_portada`, nullable. Antes la foto principal del perfil
@@ -161,4 +161,12 @@ las decisiones de diseño abiertas)
   horizontal, validado sobre el archivo original antes de comprimir
   (`ImageUploader`). Si `foto_portada` es null, el perfil usa `fotos[0]`
   para no romper las barberías existentes. Ver ARCHITECTURE.md 2.5.
+- Hero del perfil: foto a sangre completa, sin poste (2026-10-19, opción
+  A): el hero es `foto_portada ?? fotos[0]` a todo el ancho con un velo
+  oscuro y el contenido encima; el sello va en una tarjeta sobre la foto y
+  se ve también en móvil. Se eliminó el poste de barbero porque estaba
+  dibujado en CSS y era idéntico en todas las barberías (treinta barberías,
+  treinta perfiles con el mismo poste); la foto es lo único propio de cada
+  una. Alto con `min-height` (no 100vh); la foto carga con prioridad (LCP);
+  sin foto queda el fondo oscuro con el acento. Ver `docs/DESIGN.md` 8.3.
 - (agrega aquí cada decisión nueva que cierres, con fecha)

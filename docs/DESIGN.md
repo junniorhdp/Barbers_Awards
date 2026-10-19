@@ -206,8 +206,8 @@ espacio, jerarquía y una explicación de qué significa. Ver sección 8.
 | Insignias de estado (Abierto ahora, reconocimientos, sello) | píldora completa |
 | Avatares, puntos, íconos sociales | círculo |
 
-Los degradados decorativos del hero (el fondo oscuro, el poste de barbero)
-**no se eliminan**: son ilustración, no acabado de control. Lo que se
+El degradado oscuro del hero (hoy, el velo sobre la foto de portada) **no se
+elimina**: es ilustración, no acabado de control. Lo que se
 elimina es el degradado y la sombra de color de los botones.
 
 ---
@@ -235,7 +235,7 @@ Orden de secciones:
 
 1. Franja de la plataforma
 2. Encabezado con logo, navegación y acción de reserva
-3. **Hero** — nombre, ubicación, estado de apertura, foto grande, el sello
+3. **Hero** — foto de portada a sangre completa con el contenido encima (ver 8.3)
 4. **Qué significa el sello** — ver abajo
 5. Nosotros
 6. Servicios
@@ -284,6 +284,47 @@ blog ni tienda.
 
 **Nunca se copia** su logotipo, sus fotos, sus textos ni su diseño visual.
 La referencia es de estructura, no de apariencia.
+
+---
+
+### 8.3 El hero
+
+Decidido el 2026-10-19 (opción A): el hero es la **foto de portada a sangre
+completa** y el poste de barbero desaparece. El poste estaba dibujado en CSS
+y era idéntico en todas las barberías: con treinta barberías, treinta
+perfiles con el mismo poste arriba. La foto es lo único verdaderamente
+propio de cada una.
+
+Capas, de abajo arriba:
+
+1. **Fondo:** `foto_portada ?? fotos[0]`, `object-fit: cover`. Es el
+   elemento LCP: se carga con prioridad, nunca en diferido.
+2. **Velo:** degradado oscuro — oscuro arriba (el encabezado fijo), más
+   claro poco después y bien oscuro donde vive el texto
+   (`rgba(16,16,18,.72)` → `.35` → `.7` → `.92`). Los tramos se
+   calculan contra una foto **clara**, no contra una oscura.
+3. **Contenido**, en este orden:
+   - Fila superior: "Abierto ahora" (píldora) + zona y ciudad.
+   - `h1` con el nombre, con la última palabra en `<em>`.
+     `clamp(44px, 7vw, 96px)`: es el único título que puede ser tan grande.
+     Sobre foto, el `<em>` va en crema con un subrayado del acento: el
+     color `--brand-light` de morado, rojo y verde no llega a 3:1 sobre una
+     foto clara en esa zona. Sin foto, el `<em>` sí va en el acento.
+   - Regla corta en `--brand`.
+   - El eslogan y la descripción, si existen.
+   - Los dos botones (Ver Servicios / Contáctanos).
+   - Las cifras reales: barberos, experiencia, servicios.
+   - **El sello** (`SealBadge` + reconocimientos) en una tarjeta sobre la
+     foto. Se ve en escritorio **y en móvil**: es el argumento de venta.
+4. **Indicador de desplazamiento** ("Desliza"): con un hero que llena la
+   vista, señalar que hay más abajo importa más, no menos.
+
+Alto: unos 700px en escritorio y 560px en móvil, con `min-height` — **nunca
+100vh**, para que en un teléfono se vea que hay servicios debajo.
+
+**Sin ninguna foto** el hero no puede verse roto: queda el fondo oscuro con
+el acento de la barbería y el mismo contenido, sin alto vacío ni ícono de
+imagen rota. Le pasa a toda barbería recién registrada.
 
 ---
 
