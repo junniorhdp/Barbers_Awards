@@ -531,3 +531,28 @@
   .perfil .section-title { font-size: 26px; }
   .perfil .hero-btns .btn { padding: 12px 22px; font-size: 14px; }
 }
+
+/* ---------- movimiento reducido en los hovers ----------
+   Va al final del archivo a propósito: las reglas :hover de arriba tienen
+   la misma especificidad, así que este bloque solo gana si viene después. */
+@media (prefers-reduced-motion: reduce) {
+  /* DESIGN.md 2 (regla 4) y 9: con movimiento reducido ningún hover
+     desplaza ni escala nada. Los cambios de color, brillo y sombra se
+     quedan (sin transición): no son movimiento. */
+  .perfil .btn,
+  .perfil .btn-gold,
+  .perfil .btn-outline,
+  .perfil .btn-outline-dark,
+  .perfil .service-card,
+  .perfil .gallery-item img,
+  .perfil .social-row a,
+  .perfil .fab { transition: none; }
+  .perfil .btn:hover,
+  .perfil .btn-gold:hover,
+  .perfil .btn-outline:hover,
+  .perfil .btn-outline-dark:hover,
+  .perfil .service-card:hover,
+  .perfil .gallery-item:hover img,
+  .perfil .social-row a:hover,
+  .perfil .fab:hover { transform: none; }
+}
