@@ -4,6 +4,7 @@ import Image from "next/image";
 import { Playfair_Display, Poppins } from "next/font/google";
 import { createClient } from "@/lib/supabase/public";
 import { publicStorageUrl } from "@/lib/storage";
+import { certificacionVencida } from "@/lib/certificaciones";
 import { esAcentoValido } from "@/lib/accent";
 import { esLogoValido } from "@/lib/logo-presets";
 import { PerfilHeader } from "@/components/perfil/PerfilHeader";
@@ -132,9 +133,7 @@ export default async function PerfilBarberiaPage({
 
   const certificacionActiva =
     certificaciones.find((c) => c.estado === "activo" && c.categoria === "calidad") ?? null;
-  const vencida = Boolean(
-    certificacionActiva?.fecha_vencimiento && new Date(certificacionActiva.fecha_vencimiento) < new Date(),
-  );
+  const vencida = certificacionVencida(certificacionActiva?.fecha_vencimiento);
   // Reconocimientos (CU-18/CU-19): se acumulan sin límite, nunca reemplazan
   // ni compiten con el nivel de calidad — se agrupan detrás de "+N más".
   const reconocimientosActivos = certificaciones

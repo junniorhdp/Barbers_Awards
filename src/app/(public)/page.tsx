@@ -3,6 +3,11 @@ import { createClient } from "@/lib/supabase/public";
 import { BarberiaCard } from "@/components/barberias/BarberiaCard";
 import { PlatformHeader } from "@/components/ui/PlatformHeader";
 
+// Igual que el perfil (300 s): el vencimiento de una certificación no dispara
+// ninguna revalidación, así que sin esto la landing estática seguiría
+// mostrando "Sello Gold" hasta la próxima acción del staff (DESIGN.md 13.1).
+export const revalidate = 300;
+
 type BarberiaDestacada = {
   id: string;
   nombre: string;
@@ -12,6 +17,7 @@ type BarberiaDestacada = {
   fotos: string[];
   foto_portada: string | null;
   estado_sello: string;
+  certificaciones: { estado: string; categoria: string; fecha_vencimiento: string | null }[];
 };
 
 type SeccionDestacadas = {
@@ -34,7 +40,7 @@ async function obtenerDestacadas(): Promise<SeccionDestacadas> {
   // como "destacada" aquí.
   const { data: certificadas } = await supabase
     .from("certificaciones")
-    .select("fecha_emision, barberias ( id, nombre, slug, ciudad, zona, fotos, foto_portada, estado_sello )")
+    .select("fecha_emision, barberias ( id, nombre, slug, ciudad, zona, fotos, foto_portada, estado_sello, certificaciones ( estado, categoria, fecha_vencimiento ) )")
     .eq("estado", "activo")
     .eq("categoria", "calidad")
     .order("fecha_emision", { ascending: false })
@@ -50,7 +56,7 @@ async function obtenerDestacadas(): Promise<SeccionDestacadas> {
 
   const { data: recientes } = await supabase
     .from("barberias")
-    .select("id, nombre, slug, ciudad, zona, fotos, foto_portada, estado_sello")
+    .select("id, nombre, slug, ciudad, zona, fotos, foto_portada, estado_sello, certificaciones ( estado, categoria, fecha_vencimiento )")
     .neq("estado_sello", "inactivo")
     .order("created_at", { ascending: false })
     .limit(6);

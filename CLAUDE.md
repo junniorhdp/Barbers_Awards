@@ -182,4 +182,19 @@ las decisiones de diseño abiertas)
      **Pendiente**.
   No dar por hecho que la política funciona: hoy solo se cumple el mínimo
   técnico. Ver `docs/DESIGN.md` sección 10.
+- Una barbería revocada sigue en el directorio (2026-10-26, opción A): no
+  se la expulsa del listado; su tarjeta dice "Sin certificación". Razón:
+  si revocar equivaliera a expulsar, cada revocación le costaría un
+  cliente a ASECOP y el staff tendría una razón económica para no revocar;
+  un auditor con incentivos para no revocar hace que el sello no
+  signifique nada. Con la opción A revocar es barato y el sello se puede
+  defender. Implementación: `EstadoSelloTag` (`BarberiaCard`) deriva la
+  etiqueta así: suscripción no vigente → "No vigente"; `estado_sello`
+  gold/silver → "Sello Gold"/"Sello Silver"; certificación de calidad en
+  `'pendiente'` → "En verificación"; cualquier otro caso → "Sin
+  certificación". El caso por defecto es el conservador, no el favorable.
+  `estado_sello` y `cambiarEstadoCertificacion()` no cambian; solo dejan de
+  ser la única fuente de la etiqueta. `certificaciones` es obligatorio en el
+  tipo de la tarjeta. Sigue abierto pausada vs. nunca auditada
+  (`docs/DESIGN.md` 13.1).
 - (agrega aquí cada decisión nueva que cierres, con fecha)

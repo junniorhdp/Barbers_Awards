@@ -458,6 +458,46 @@ estado nuevo, con su migración) o si se acepta a propósito y se deja escrito
 por qué. Hasta entonces, el rediseño del sello **no puede distinguirlos**,
 porque el dato no existe.
 
+**Avance (2026-10-26) — la revocada, resuelta en la tarjeta:** `BarberiaCard`
+(directorio y landing) ya no decide por `estado_sello`. Muestra "En
+verificación" solo si hay una certificación de calidad en `'pendiente'`, y
+en cualquier otro caso sin Gold/Silver dice **"Sin certificación"**. Una
+barbería revocada sigue en el directorio, pero ya no se presenta como en
+auditoría (decisión en `CLAUDE.md`).
+
+Lo que **sigue abierto**:
+
+- **Pausada vs. nunca auditada:** las dos son `'pendiente'` y la tarjeta las
+  sigue mostrando igual, como "En verificación".
+- **El hero del perfil — el siguiente en la lista:** todavía muestra "En
+  verificación" cuando no hay un nivel de calidad activo pero sí
+  reconocimientos, así que una barbería revocada **con** reconocimientos
+  sigue apareciendo ahí como en auditoría. Es la próxima pantalla que debe
+  pasar a la regla de abajo.
+
+#### La regla: el estado del sello se deriva, no se lee de `estado_sello`
+
+`barberias.estado_sello` es un campo desnormalizado que **nada mantiene
+sincronizado** con `certificaciones`: no se actualiza cuando una
+certificación vence, y al pausar y al revocar queda igual (`'pendiente'`).
+Los dos errores encontrados el 2026-10-26 —la revocada como "En
+verificación" y la vencida como "Sello Gold"— salieron de confiar en ese
+campo.
+
+**El estado del sello se deriva de `certificaciones`, que es la fuente de
+verdad.** `estado_sello` sirve para **filtrar** en el directorio, no para
+decidir qué etiqueta se muestra. Toda pantalla nueva que muestre el estado
+del sello debe derivarlo, no leerlo de ahí. El vencimiento se decide con
+`certificacionVencida()` (`src/lib/certificaciones.ts`), el mismo criterio
+en el perfil y en la tarjeta.
+
+**Una pantalla estática que muestre estado de sello necesita
+`revalidate`.** El vencimiento ocurre por el paso del tiempo y no dispara
+ninguna revalidación (las acciones del staff sí llaman a `revalidatePath`).
+Sin `revalidate`, la página derivaría bien el estado una vez y lo dejaría
+congelado. La landing y el perfil usan 300 s, y el directorio es dinámico:
+las tres pantallas no pueden discrepar por más de cinco minutos.
+
 ### 13.2 `/verificar/[folio]`
 
 Es el momento de máxima verdad: alguien duda y escribe el folio. **El
