@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/public";
 import { DirectorioFiltros } from "@/components/barberias/DirectorioFiltros";
 import { BarberiaCard } from "@/components/barberias/BarberiaCard";
 import { PlatformHeader } from "@/components/ui/PlatformHeader";
-import { certificacionVencida } from "@/lib/certificaciones";
+import { certificacionVigente } from "@/lib/certificaciones";
 
 type ParametrosBusqueda = {
   q?: string;
@@ -67,10 +67,7 @@ async function buscarBarberias(params: ParametrosBusqueda) {
       ...barberia,
       certificaciones,
       // 'activo' no basta: un reconocimiento vencido no cuenta (DESIGN.md 13.1).
-      tieneReconocimientos: certificaciones.some(
-        (c) =>
-          c.estado === "activo" && c.categoria === "reconocimiento" && !certificacionVencida(c.fecha_vencimiento),
-      ),
+      tieneReconocimientos: certificaciones.some((c) => c.categoria === "reconocimiento" && certificacionVigente(c)),
     };
   });
 }

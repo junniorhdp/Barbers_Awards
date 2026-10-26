@@ -39,7 +39,9 @@ async function obtenerDestacadas(): Promise<SeccionDestacadas> {
   // "Bioseguridad") no debe hacer que una barbería sin Gold/Silver aparezca
   // como "destacada" aquí.
   // 'activo' no basta: una certificación vencida no hace "destacada" a una
-  // barbería (DESIGN.md 13.1).
+  // barbería. El filtro por estado ya excluye las que el cron marcó como
+  // 'vencido'; el de la fecha cubre la ventana de hasta 24 horas antes de que
+  // corra (DESIGN.md 13.1).
   const ahora = new Date().toISOString();
   const { data: certificadas } = await supabase
     .from("certificaciones")

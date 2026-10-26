@@ -57,8 +57,9 @@ export default async function VerificarFolioPage({
     return <NoEncontrado folio={folio} />;
   }
 
-  // Mismo criterio para nivel de calidad y reconocimiento (DESIGN.md 13.1).
-  const vencida = certificacion.estado === "activo" && certificacionVencida(certificacion.fecha_vencimiento);
+  // Mismo criterio para nivel de calidad y reconocimiento: 'vencido' (ya
+  // procesada por el cron) o 'activo' con la fecha pasada (DESIGN.md 13.1).
+  const vencida = certificacionVencida(certificacion);
 
   const estado: EstadoBadge = vencida
     ? "vencido"

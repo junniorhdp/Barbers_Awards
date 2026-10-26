@@ -85,12 +85,14 @@ async function mensajeCalidadOcupada(
 ): Promise<string> {
   const { data: activa } = await supabase
     .from("certificaciones")
-    .select("fecha_vencimiento")
+    .select("estado, fecha_vencimiento")
     .eq("barberia_id", barberiaId)
     .eq("categoria", "calidad")
     .eq("estado", "activo")
     .maybeSingle();
-  if (activa && certificacionVencida(activa.fecha_vencimiento)) {
+  // Solo pasa dentro de la ventana de hasta 24 horas: una vez que el cron la
+  // marca 'vencido', ya no ocupa el índice único.
+  if (activa && certificacionVencida(activa)) {
     return "Esta barbería tiene un nivel de calidad VENCIDO. Usa \"Renovar\" para cerrarlo y emitir el nuevo.";
   }
   return accion === "asignar"
@@ -130,8 +132,9 @@ export async function emitirCertificacion(_prevState: FormState, formData: FormD
 
   // Renovar: cierra la certificación de calidad vencida y emite la nueva en
   // el mismo envío. Se cierra al confirmar, no al abrir el formulario: si el
-  // staff cancela, no cambia nada. Queda en 'revocado' porque es el único
-  // estado terminal que existe hoy (DESIGN.md 13.1).
+  // staff cancela, no cambia nada. Queda en 'vencido' (SCHEMA.sql v1.9), que
+  // es la verdad: expiró, no se la retiró. Si el cron ya la marcó, no hay
+  // nada que cerrar y esto es una emisión normal (DESIGN.md 13.1).
   const renovarId = formData.get("renovarId");
   if (typeof renovarId === "string" && renovarId !== "") {
     if (!esCalidad) return { error: "Solo se renueva un nivel de calidad. Elige un sello Gold o Silver." };
@@ -144,17 +147,18 @@ export async function emitirCertificacion(_prevState: FormState, formData: FormD
       !vencida ||
       vencida.barberia_id !== parsed.data.barberiaId ||
       vencida.categoria !== "calidad" ||
-      vencida.estado !== "activo" ||
-      !certificacionVencida(vencida.fecha_vencimiento)
+      !certificacionVencida(vencida)
     ) {
-      return { error: "La certificación a renovar ya no está activa y vencida. Recarga la página." };
+      return { error: "La certificación a renovar ya no está vencida. Recarga la página." };
     }
-    const { error: errorCierre } = await supabase
-      .from("certificaciones")
-      .update({ estado: "revocado" })
-      .eq("id", renovarId)
-      .eq("estado", "activo");
-    if (errorCierre) return { error: "No se pudo cerrar la certificación vencida." };
+    if (vencida.estado === "activo") {
+      const { error: errorCierre } = await supabase
+        .from("certificaciones")
+        .update({ estado: "vencido" })
+        .eq("id", renovarId)
+        .eq("estado", "activo");
+      if (errorCierre) return { error: "No se pudo cerrar la certificación vencida." };
+    }
   }
 
   // Reintenta si el folio choca con uno existente (ARCHITECTURE.md 3.6).
@@ -219,6 +223,15 @@ async function cambiarEstadoCertificacion(certificacionId: string, nuevoEstado: 
     .eq("id", certificacionId)
     .maybeSingle();
   if (!certificacion) return { error: "La certificación ya no existe." };
+  // Pausar solo tiene sentido sobre una activa; revocar, sobre cualquiera que
+  // no esté revocada ya (también una 'vencido', si hay motivo). 'vencido' no
+  // se pone desde aquí: lo ponen el cron y Renovar.
+  if (nuevoEstado === "pendiente" && certificacion.estado !== "activo") {
+    return { error: "Solo se puede pausar una certificación activa." };
+  }
+  if (nuevoEstado === "revocado" && certificacion.estado === "revocado") {
+    return { error: "Esta certificación ya está revocada." };
+  }
 
   const { error } = await supabase
     .from("certificaciones")
@@ -258,12 +271,17 @@ export async function reanudarCertificacion(certificacionId: string): Promise<Fo
 
   const { data: certificacion } = await supabase
     .from("certificaciones")
-    .select("id, estado, categoria, barberia_id, barberias ( slug ), catalogo_sellos ( nivel )")
+    .select("id, estado, categoria, barberia_id, fecha_vencimiento, barberias ( slug ), catalogo_sellos ( nivel )")
     .eq("id", certificacionId)
     .maybeSingle();
   if (!certificacion) return { error: "La certificación ya no existe." };
   if (certificacion.estado !== "pendiente") {
     return { error: "Solo se puede reanudar una certificación pausada. Una revocada no se reanuda: emite una nueva." };
+  }
+  // Reanudar una que venció mientras estaba pausada la dejaría 'activo' con
+  // la fecha pasada: vigente para el índice, vencida para todo lo demás.
+  if (certificacionVencida({ estado: "activo", fecha_vencimiento: certificacion.fecha_vencimiento })) {
+    return { error: "Esta certificación venció mientras estaba pausada. Emite una nueva." };
   }
 
   const esCalidad = certificacion.categoria === "calidad";

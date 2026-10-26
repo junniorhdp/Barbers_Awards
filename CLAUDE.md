@@ -210,4 +210,21 @@ las decisiones de diseño abiertas)
   `/admin/certificaciones`, una calidad pausada muestra "Reanudar" (y
   "Revocar") en lugar de "Asignar sello", para no fabricar folios huérfanos
   re-emitiendo.
+- Estado 'vencido' en certificaciones (2026-10-26, SCHEMA.sql v1.9):
+  `certificaciones.estado` admite `'vencido'`, y el `pg_cron` diario
+  `expirar-certificaciones` lo pone cuando pasa `fecha_vencimiento` (mismo
+  patrón que `expirar-suscripciones`). Al renovar, la vieja pasa a
+  `'vencido'`, no a `'revocado'`. **El estado es una conveniencia, no un
+  reemplazo**: el cron corre una vez al día, así que durante hasta 24 horas
+  una vencida sigue en `'activo'`. Toda lectura del estado sigue pasando por
+  `certificacionVencida()` / `certificacionVigente()`
+  (`src/lib/certificaciones.ts`), que dan "vencida" tanto con `'vencido'`
+  como con `'activo'` y la fecha pasada. No eliminar esas comprobaciones.
+  `barberias.estado_sello` también admite `'vencido'` (CHECK
+  `barberias_estado_sello_check` ampliado) y el mismo job lo pone en las
+  barberías gold/silver sin certificación de calidad activa, para que
+  `?sello=gold` no traiga barberías vencidas; sigue sirviendo solo para
+  filtrar, nunca para una etiqueta. La migración se corre a mano en los dos
+  proyectos, ANTES del push: el código escribe `'vencido'` al renovar y el
+  CHECK viejo lo rechaza.
 - (agrega aquí cada decisión nueva que cierres, con fecha)

@@ -1,5 +1,5 @@
 -- =============================================================================
--- BARBERS AWARD  ·  SCHEMA.sql  (MVP v1.8)
+-- BARBERS AWARD  ·  SCHEMA.sql  (MVP v1.9)
 -- Base de datos: Supabase (PostgreSQL + Auth + Storage)
 --
 -- Cómo aplicarlo:
@@ -77,6 +77,18 @@
 -- con exigencia y techo de peso propios. Nullable a propósito: si es NULL,
 -- el perfil público usa fotos[0] como antes. Columna común: no la protege
 -- barberias_guard_privileged_columns() y no cambia ninguna política RLS.
+--
+-- Cambios de la v1.9 respecto a la v1.8 (ver sección 14 al final del
+-- archivo): certificaciones.estado admite 'vencido', y un pg_cron diario
+-- ('expirar-certificaciones') lo pone cuando pasa fecha_vencimiento, con el
+-- mismo patrón que 'expirar-suscripciones' (v1.7). barberias.estado_sello
+-- también admite 'vencido' y el mismo job lo pone en las barberías cuyo nivel
+-- de calidad venció, para que el filtro ?sello=gold del directorio no las
+-- traiga; estado_sello sigue sirviendo solo para filtrar. El estado es una
+-- conveniencia, NO un reemplazo: entre el vencimiento y la siguiente
+-- corrida del cron hay hasta 24 horas en que una certificación vencida
+-- sigue en 'activo', así que la aplicación sigue derivando el vencimiento
+-- de la fecha (src/lib/certificaciones.ts, DESIGN.md 13.1).
 -- =============================================================================
 
 begin;
@@ -1125,5 +1137,95 @@ alter table public.barberias
 
 comment on column public.barberias.foto_portada is
   'Ruta relativa en barberias-storage de la foto de portada (SCHEMA.sql v1.8). NULL = el perfil usa fotos[0].';
+
+commit;
+
+
+-- =============================================================================
+-- 14. MIGRACIÓN v1.9 — estado 'vencido' en certificaciones
+--
+--     · Hasta ahora 'vencido' no existía: una certificación vencida seguía en
+--       'activo', y cada pantalla tenía que cruzar estado con
+--       fecha_vencimiento. Seis pantallas lo olvidaron (DESIGN.md 13.1). El
+--       índice único uq_certificaciones_calidad_activa_por_barberia también
+--       la contaba como activa, así que no se podía emitir la siguiente.
+--     · Se amplía el CHECK, se ponen al día las que ya vencieron y se
+--       programa el cron diario, igual que 'expirar-suscripciones' (v1.7):
+--       0 5 * * * UTC = medianoche en Colombia.
+--     · ADVERTENCIA: el cron corre una vez al día. Entre el vencimiento y la
+--       siguiente corrida hay hasta 24 horas en que la certificación sigue en
+--       'activo'. La aplicación NO debe confiar solo en el estado: sigue
+--       comprobando la fecha (certificacionVencida()).
+--     · Solo se marcan las que están en 'activo'. Una 'pendiente' (pausada)
+--       cuya fecha pasa no se toca: reanudarla está bloqueado en la
+--       aplicación, y revocarla sigue siendo posible.
+--     · barberias.estado_sello también admite 'vencido', y el mismo job lo
+--       pone en las barberías que están en 'gold'/'silver' y ya no tienen
+--       ninguna certificación de calidad activa (y sí una 'vencido'). Sin
+--       esto, ?sello=gold del directorio seguía trayendo barberías con el
+--       Gold vencido. La condición sale de certificaciones, no de fechas
+--       sueltas. estado_sello sigue sirviendo SOLO para filtrar, nunca para
+--       decidir una etiqueta (DESIGN.md 13.1). Durante la ventana de hasta 24
+--       horas sigue en 'gold'/'silver'.
+--     · barberias_guard_privileged_columns() no bloquea el cron: deja pasar
+--       cuando auth.uid() es null, igual que con 'expirar-suscripciones'.
+-- =============================================================================
+
+begin;
+
+alter table public.certificaciones
+  drop constraint if exists certificaciones_estado_check;
+alter table public.certificaciones
+  add constraint certificaciones_estado_check
+  check (estado in ('activo', 'pendiente', 'revocado', 'vencido'));
+
+alter table public.barberias
+  drop constraint if exists barberias_estado_sello_check;
+alter table public.barberias
+  add constraint barberias_estado_sello_check
+  check (estado_sello in ('pendiente', 'gold', 'silver', 'inactivo', 'vencido'));
+
+-- Puesta al día: las que ya vencieron antes de que existiera el cron.
+update public.certificaciones
+   set estado = 'vencido'
+ where estado = 'activo'
+   and fecha_vencimiento is not null
+   and fecha_vencimiento < now();
+
+-- Puesta al día de estado_sello, con la misma condición que el cron.
+update public.barberias b
+   set estado_sello = 'vencido'
+ where b.estado_sello in ('gold', 'silver')
+   and not exists (
+     select 1 from public.certificaciones c
+      where c.barberia_id = b.id and c.categoria = 'calidad' and c.estado = 'activo'
+   )
+   and exists (
+     select 1 from public.certificaciones c
+      where c.barberia_id = b.id and c.categoria = 'calidad' and c.estado = 'vencido'
+   );
+
+select cron.schedule(
+  'expirar-certificaciones', '0 5 * * *',
+  $$
+  update public.certificaciones
+     set estado = 'vencido'
+   where estado = 'activo'
+     and fecha_vencimiento is not null
+     and fecha_vencimiento < now();
+
+  update public.barberias b
+     set estado_sello = 'vencido'
+   where b.estado_sello in ('gold', 'silver')
+     and not exists (
+       select 1 from public.certificaciones c
+        where c.barberia_id = b.id and c.categoria = 'calidad' and c.estado = 'activo'
+     )
+     and exists (
+       select 1 from public.certificaciones c
+        where c.barberia_id = b.id and c.categoria = 'calidad' and c.estado = 'vencido'
+     );
+  $$
+);
 
 commit;

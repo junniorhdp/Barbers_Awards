@@ -188,9 +188,11 @@ export function CertificacionesManager({
         // Pausada = la de calidad más reciente está en 'pendiente'. Se ofrece
         // reanudarla en vez de emitir otra, para no dejar folios huérfanos.
         const calidadMasReciente = certificacionCalidadActual(barberia.certificaciones);
-        // 'activo' no basta: una vencida se muestra como vencida y se renueva.
+        // 'activo' no basta: una vencida se muestra como vencida y se renueva,
+        // tanto si el cron ya la marcó 'vencido' como si sigue en 'activo'
+        // dentro de la ventana de hasta 24 horas.
         const calidadVencida =
-          calidadActiva && certificacionVencida(calidadActiva.fecha_vencimiento) ? calidadActiva : null;
+          calidadMasReciente && certificacionVencida(calidadMasReciente) ? calidadMasReciente : null;
         const calidadPausada =
           !calidadActiva && calidadMasReciente?.estado === "pendiente" ? calidadMasReciente : null;
         const reconocimientosActivos = barberia.certificaciones.filter(
@@ -328,7 +330,7 @@ export function CertificacionesManager({
                   {reconocimientosActivos.map((reco) => {
                     // 'activo' no basta: un reconocimiento vencido se marca
                     // como tal y no se pausa (DESIGN.md 13.1).
-                    const vencido = certificacionVencida(reco.fecha_vencimiento);
+                    const vencido = certificacionVencida(reco);
                     return (
                       <div
                         key={reco.id}

@@ -4,7 +4,7 @@ Resumen de continuidad, no la fuente de verdad técnica. Para detalle real:
 `CLAUDE.md` ("Decisiones tomadas"), `ARCHITECTURE.md` (sección 7, decisiones
 abiertas) y el historial de versiones en la cabecera de `SCHEMA.sql`.
 
-**Última actualización:** 2026-10-19.
+**Última actualización:** 2026-10-26.
 
 **En una línea:** la app está desplegada en Vercel
 (`barbers-awards.vercel.app`) con su propio proyecto de Supabase de
@@ -165,6 +165,24 @@ acentos, 360px y 320px, y nombre largo.
   NO está implementado** (ver "Mejoras detectadas, sin hacer").
 - **Poste de barbero eliminado:** era idéntico en todas las barberías; la
   foto es lo único propio de cada una.
+
+## ✅ SCHEMA.sql v1.9 — estado 'vencido' (2026-10-26): aplicada en los dos proyectos
+
+`certificaciones.estado` y `barberias.estado_sello` admiten `'vencido'`, y el
+cron diario `expirar-certificaciones` los pone al pasar `fecha_vencimiento`.
+**Aplicada a mano el 2026-10-26 en el SQL Editor de los dos proyectos
+(desarrollo y producción), antes del push**, como exigía el código nuevo, que
+escribe `'vencido'` al renovar.
+
+Lo que se verifica en cada proyecto: los dos CHECK
+(`certificaciones_estado_check` y `barberias_estado_sello_check`) admiten
+`'vencido'`, el job `expirar-certificaciones` aparece activo en `cron.job`,
+las certificaciones que ya habían vencido quedaron en `'vencido'`, y las
+barberías con el nivel de calidad vencido tienen `estado_sello = 'vencido'`.
+
+Recordatorio: el estado es una conveniencia, no un reemplazo. Durante hasta
+24 horas tras un vencimiento, la certificación sigue en `'activo'` hasta que
+corre el cron; la aplicación sigue comprobando la fecha (DESIGN.md 13.1).
 
 ## Bloqueado por fuera del equipo
 

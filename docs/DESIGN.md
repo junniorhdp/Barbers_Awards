@@ -527,24 +527,35 @@ de una certificación —nivel de calidad o reconocimiento— tiene que pasar po
 directorio, hero del perfil, reconocimientos) y las tres salieron de leer el
 estado sin mirar la fecha.
 
-**Renovar una certificación vencida (2026-10-26):** el índice único
-`uq_certificaciones_calidad_activa_por_barberia` cuenta como activa también
-a una vencida, porque para la base de datos sigue siendo `'activo'`. El
-panel de admin la muestra como "Vencida" y ofrece **Renovar**: un solo envío
-que cierra la vencida y emite la nueva. Al renovar, la vencida queda en
-`'revocado'`: es semánticamente incorrecto (no se la retiró, expiró sola),
-pero es el único estado terminal que existe hoy; `'pendiente'` la haría
-pasar por pausada y reanudable. Consecuencia: el folio viejo responde
-"Inactivo" en `/verificar` en vez de "Vencido".
+**Renovar una certificación vencida (2026-10-26):** el panel de admin la
+muestra como "Vencida" y ofrece **Renovar**: un solo envío que la cierra y
+emite la nueva. Antes de la v1.9 la vieja quedaba en `'revocado'`, el único
+estado terminal que existía, y su folio respondía "Inactivo". Ahora queda en
+`'vencido'`. Si el cron ya la marcó, Renovar es una emisión normal; cerrar
+la vieja solo hace falta dentro de la ventana de hasta 24 horas, cuando
+todavía ocupa el índice único.
 
-**Propuesta de fondo, sin implementar (requiere migración):** todo lo
-anterior existe porque `certificaciones.estado` no tiene un valor
-`'vencido'`: el CHECK solo admite `'activo'`, `'pendiente'` y
-`'revocado'`, y nada corre cuando pasa `fecha_vencimiento`. La solución
-sería un estado `'vencido'` puesto por un `pg_cron` diario, como el que ya
-marca las suscripciones vencidas (SCHEMA.sql v1.7). Con eso el índice único,
-el panel y las etiquetas funcionarían sin derivar nada, y renovar dejaría de
-necesitar `'revocado'`. Se decide aparte.
+**El estado `'vencido'` (SCHEMA.sql v1.9, 2026-10-26):** `certificaciones.estado`
+admite ahora `'vencido'`, y un `pg_cron` diario (`expirar-certificaciones`,
+medianoche en Colombia) lo pone cuando pasa `fecha_vencimiento`. Al
+renovar, la vieja pasa a `'vencido'`, no a `'revocado'`, así que su folio
+responde "Vencido" en `/verificar`. Una vez marcada, ya no ocupa el índice
+único: emitir la siguiente no choca.
+
+`barberias.estado_sello` también admite `'vencido'`, y lo mantiene el mismo
+cron: pasa a `'vencido'` una barbería en `'gold'`/`'silver'` que ya no tiene
+ninguna certificación de calidad activa (y sí una vencida). Así el filtro
+`?sello=gold` del directorio deja de traer barberías con el Gold vencido.
+**`estado_sello` sigue sirviendo SOLO para filtrar, nunca para decidir una
+etiqueta**: durante la ventana de hasta 24 horas sigue en `'gold'`, y las
+pantallas derivan el estado de `certificaciones`.
+
+**El cron corre una vez al día: durante hasta 24 horas una certificación
+vencida sigue en `'activo'`. Por eso las comprobaciones derivadas de la
+fecha (`certificacionVencida()`, `certificacionVigente()`) siguen siendo
+obligatorias en toda lectura del estado. El estado es una conveniencia, no un
+reemplazo: quitarlas reintroduce el bug en una ventana más estrecha y mucho
+más difícil de encontrar.**
 
 **Una pantalla estática que muestre estado de sello necesita
 `revalidate`.** El vencimiento ocurre por el paso del tiempo y no dispara

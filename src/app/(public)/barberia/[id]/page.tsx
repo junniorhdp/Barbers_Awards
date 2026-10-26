@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Playfair_Display, Poppins } from "next/font/google";
 import { createClient } from "@/lib/supabase/public";
 import { publicStorageUrl } from "@/lib/storage";
-import { certificacionCalidadActual, certificacionVencida, situacionSello } from "@/lib/certificaciones";
+import { certificacionCalidadActual, certificacionVigente, situacionSello } from "@/lib/certificaciones";
 import { esAcentoValido } from "@/lib/accent";
 import { esLogoValido } from "@/lib/logo-presets";
 import { PerfilHeader } from "@/components/perfil/PerfilHeader";
@@ -141,7 +141,7 @@ export default async function PerfilBarberiaPage({
   // 'activo' no basta: uno vencido no se muestra (DESIGN.md 13.1).
   const reconocimientosActivos = certificaciones
     .filter(
-      (c) => c.estado === "activo" && c.categoria === "reconocimiento" && !certificacionVencida(c.fecha_vencimiento),
+      (c) => c.categoria === "reconocimiento" && certificacionVigente(c),
     )
     .map((c) => ({
       folio_verificacion: c.folio_verificacion,
