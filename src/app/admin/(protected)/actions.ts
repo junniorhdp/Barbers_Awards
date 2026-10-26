@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { generarFolio } from "@/lib/folio";
 import { RechazoSchema, SelloSchema, CertificacionSchema } from "@/lib/validators";
+import { certificacionVencida } from "@/lib/certificaciones";
 
 export type FormState = { error?: string; success?: boolean };
 
@@ -74,6 +75,29 @@ export async function rechazarPostulacion(_prevState: FormState, formData: FormD
 
 // --- Certificaciones (CU-18) ----------------------------------------------
 
+// El índice único cuenta como "activa" también a una certificación vencida
+// (no existe un estado 'vencido'), así que al chocar con él hay que decirle
+// al staff cuál de los dos casos es (DESIGN.md 13.1).
+async function mensajeCalidadOcupada(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  barberiaId: string,
+  accion: "asignar" | "reanudar",
+): Promise<string> {
+  const { data: activa } = await supabase
+    .from("certificaciones")
+    .select("fecha_vencimiento")
+    .eq("barberia_id", barberiaId)
+    .eq("categoria", "calidad")
+    .eq("estado", "activo")
+    .maybeSingle();
+  if (activa && certificacionVencida(activa.fecha_vencimiento)) {
+    return "Esta barbería tiene un nivel de calidad VENCIDO. Usa \"Renovar\" para cerrarlo y emitir el nuevo.";
+  }
+  return accion === "asignar"
+    ? "Esta barbería ya tiene un nivel de calidad VIGENTE. Revócalo o pausa el actual antes de asignar uno nuevo."
+    : "Esta barbería ya tiene un nivel de calidad VIGENTE. Revócalo o pausa el actual antes de reanudar este.";
+}
+
 export async function emitirCertificacion(_prevState: FormState, formData: FormData): Promise<FormState> {
   const ctx = await contextoAdmin();
   if ("error" in ctx) return { error: ctx.error };
@@ -104,6 +128,35 @@ export async function emitirCertificacion(_prevState: FormState, formData: FormD
     return { error: "Este sello no se puede asignar: su nivel no es Gold ni Silver." };
   }
 
+  // Renovar: cierra la certificación de calidad vencida y emite la nueva en
+  // el mismo envío. Se cierra al confirmar, no al abrir el formulario: si el
+  // staff cancela, no cambia nada. Queda en 'revocado' porque es el único
+  // estado terminal que existe hoy (DESIGN.md 13.1).
+  const renovarId = formData.get("renovarId");
+  if (typeof renovarId === "string" && renovarId !== "") {
+    if (!esCalidad) return { error: "Solo se renueva un nivel de calidad. Elige un sello Gold o Silver." };
+    const { data: vencida } = await supabase
+      .from("certificaciones")
+      .select("barberia_id, categoria, estado, fecha_vencimiento")
+      .eq("id", renovarId)
+      .maybeSingle();
+    if (
+      !vencida ||
+      vencida.barberia_id !== parsed.data.barberiaId ||
+      vencida.categoria !== "calidad" ||
+      vencida.estado !== "activo" ||
+      !certificacionVencida(vencida.fecha_vencimiento)
+    ) {
+      return { error: "La certificación a renovar ya no está activa y vencida. Recarga la página." };
+    }
+    const { error: errorCierre } = await supabase
+      .from("certificaciones")
+      .update({ estado: "revocado" })
+      .eq("id", renovarId)
+      .eq("estado", "activo");
+    if (errorCierre) return { error: "No se pudo cerrar la certificación vencida." };
+  }
+
   // Reintenta si el folio choca con uno existente (ARCHITECTURE.md 3.6).
   let insertado: { error: { code?: string } | null } = { error: null };
   for (let intento = 0; intento < 5; intento++) {
@@ -120,12 +173,13 @@ export async function emitirCertificacion(_prevState: FormState, formData: FormD
     if (!resultado.error || resultado.error.code !== "23505") break;
   }
   if (insertado.error) {
+    if (insertado.error.code === "23505" && esCalidad) {
+      return { error: await mensajeCalidadOcupada(supabase, parsed.data.barberiaId, "asignar") };
+    }
     return {
       error:
         insertado.error.code === "23505"
-          ? esCalidad
-            ? "Esta barbería ya tiene un nivel de calidad activo. Revócalo o pausa el actual antes de asignar uno nuevo."
-            : "No se pudo generar un folio único. Intenta de nuevo."
+          ? "No se pudo generar un folio único. Intenta de nuevo."
           : "No se pudo emitir la certificación.",
     };
   }
@@ -191,6 +245,67 @@ export async function pausarCertificacion(certificacionId: string): Promise<Form
 
 export async function revocarCertificacion(certificacionId: string): Promise<FormState> {
   return cambiarEstadoCertificacion(certificacionId, "revocado");
+}
+
+// Pausar es reversible; revocar no. Devuelve a 'activo' una certificación
+// pausada ('pendiente') y, si es de calidad, restaura estado_sello a su
+// nivel. Sin esto, la única salida de una pausa era emitir otra con folio
+// nuevo, dejando la vieja huérfana en 'pendiente' (DESIGN.md 13.1).
+export async function reanudarCertificacion(certificacionId: string): Promise<FormState> {
+  const ctx = await contextoAdmin();
+  if ("error" in ctx) return { error: ctx.error };
+  const { supabase } = ctx;
+
+  const { data: certificacion } = await supabase
+    .from("certificaciones")
+    .select("id, estado, categoria, barberia_id, barberias ( slug ), catalogo_sellos ( nivel )")
+    .eq("id", certificacionId)
+    .maybeSingle();
+  if (!certificacion) return { error: "La certificación ya no existe." };
+  if (certificacion.estado !== "pendiente") {
+    return { error: "Solo se puede reanudar una certificación pausada. Una revocada no se reanuda: emite una nueva." };
+  }
+
+  const esCalidad = certificacion.categoria === "calidad";
+  if (esCalidad) {
+    // Solo la más reciente: reanudar una pausada antigua dejaría el sello
+    // activo detrás de otra certificación más nueva, y la etiqueta (que mira
+    // la más reciente) no lo mostraría.
+    const { data: masReciente } = await supabase
+      .from("certificaciones")
+      .select("id")
+      .eq("barberia_id", certificacion.barberia_id)
+      .eq("categoria", "calidad")
+      .order("fecha_emision", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (masReciente?.id !== certificacion.id) {
+      return { error: "Solo se puede reanudar la certificación de calidad más reciente de la barbería." };
+    }
+  }
+
+  const { error } = await supabase.from("certificaciones").update({ estado: "activo" }).eq("id", certificacionId);
+  if (error) {
+    return {
+      error:
+        error.code === "23505"
+          ? await mensajeCalidadOcupada(supabase, certificacion.barberia_id, "reanudar")
+          : "No se pudo reanudar la certificación.",
+    };
+  }
+
+  if (esCalidad) {
+    const sello = certificacion.catalogo_sellos as unknown as { nivel: string | null } | null;
+    const nivel = (sello?.nivel ?? "").toLowerCase();
+    if (nivel === "gold" || nivel === "silver") {
+      await supabase.from("barberias").update({ estado_sello: nivel }).eq("id", certificacion.barberia_id);
+    }
+  }
+
+  const barberia = certificacion.barberias as unknown as { slug: string } | null;
+  revalidarPublico(barberia?.slug);
+  revalidatePath("/admin/certificaciones");
+  return { success: true };
 }
 
 // --- Catálogo de sellos (CU-19) --------------------------------------------

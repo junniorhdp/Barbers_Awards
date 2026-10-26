@@ -465,17 +465,47 @@ en cualquier otro caso sin Gold/Silver dice **"Sin certificación"**. Una
 barbería revocada sigue en el directorio, pero ya no se presenta como en
 auditoría (decisión en `CLAUDE.md`).
 
+**Avance (2026-10-26) — solo cuenta la certificación más reciente:** la
+regla anterior preguntaba si existía *alguna* certificación de calidad en
+`'pendiente'`, es decir, miraba toda la historia. Una pausada hace un mes y
+nunca reanudada dejaba a la barbería en "En verificación" para siempre,
+aunque su certificación real estuviera vigente, vencida o revocada (caso
+real: 24 certificaciones, 4 de ellas `'pendiente'` antiguas; al vencerse su
+Gold, la etiqueta cayó en "En verificación"). Ahora la tarjeta **y el hero
+del perfil** miran solo la de calidad con mayor `fecha_emision`
+(`certificacionCalidadActual()` y `situacionSello()`, en
+`src/lib/certificaciones.ts`). **El hero del perfil ya quedó cubierto**: una
+barbería revocada con reconocimientos ya no aparece ahí como en auditoría.
+
+**Avance (2026-10-26) — pausar es reversible:** `reanudarCertificacion()`
+devuelve a `'activo'` la certificación pausada, con el **mismo folio**, y
+restaura `estado_sello`. Antes la única salida de una pausa era emitir otra
+con folio nuevo, lo que dejaba la vieja huérfana en `'pendiente'`: quien
+guardó el folio anterior leía "En proceso" en `/verificar` sobre una
+barbería certificada con otro folio, y cada ciclo de pausar y re-emitir
+fabricaba otra fila huérfana. Revocar sigue sin vuelta atrás.
+
 Lo que **sigue abierto**:
 
-- **Pausada vs. nunca auditada:** las dos son `'pendiente'` y la tarjeta las
-  sigue mostrando igual, como "En verificación".
-- **El hero del perfil — el siguiente en la lista:** todavía muestra "En
-  verificación" cuando no hay un nivel de calidad activo pero sí
-  reconocimientos, así que una barbería revocada **con** reconocimientos
-  sigue apareciendo ahí como en auditoría. Es la próxima pantalla que debe
-  pasar a la regla de abajo.
+- **Pausada vs. nunca auditada:** en el esquema las dos son `'pendiente'` y
+  se muestran igual, como "En verificación". En la práctica, la aplicación
+  hoy emite siempre en `'activo'`, así que todo `'pendiente'` viene de una
+  pausa; una barbería aún no auditada no tiene certificación y dice "Sin
+  certificación".
+- **Las huérfanas ya existentes:** las certificaciones `'pendiente'` que
+  dejaron los ciclos anteriores de pausar y re-emitir siguen ahí, y en
+  `/verificar` responden "En proceso". La etiqueta ya no se ve afectada,
+  pero sus folios dicen algo falso.
 
-#### La regla: el estado del sello se deriva, no se lee de `estado_sello`
+#### La regla: la etiqueta describe la situación actual
+
+**La etiqueta describe la situación actual; se deriva de la certificación de
+calidad más reciente, nunca del historial ni de `estado_sello`.** "La actual"
+es la activa si existe —el índice único garantiza que hay a lo sumo una,
+vencida o no— y, si no hay activa, la de mayor `fecha_emision`. Preferir la
+activa evita que una `fecha_emision` editada a mano (por ejemplo, al probar
+un vencimiento en el SQL Editor) esconda la certificación real detrás de una
+revocada o pausada más nueva.
 
 `barberias.estado_sello` es un campo desnormalizado que **nada mantiene
 sincronizado** con `certificaciones`: no se actualiza cuando una
@@ -490,6 +520,31 @@ decidir qué etiqueta se muestra. Toda pantalla nueva que muestre el estado
 del sello debe derivarlo, no leerlo de ahí. El vencimiento se decide con
 `certificacionVencida()` (`src/lib/certificaciones.ts`), el mismo criterio
 en el perfil y en la tarjeta.
+
+**`estado === 'activo'` nunca basta por sí solo:** toda lectura del estado
+de una certificación —nivel de calidad o reconocimiento— tiene que pasar por
+`certificacionVencida()`. Este error apareció tres veces (tarjeta del
+directorio, hero del perfil, reconocimientos) y las tres salieron de leer el
+estado sin mirar la fecha.
+
+**Renovar una certificación vencida (2026-10-26):** el índice único
+`uq_certificaciones_calidad_activa_por_barberia` cuenta como activa también
+a una vencida, porque para la base de datos sigue siendo `'activo'`. El
+panel de admin la muestra como "Vencida" y ofrece **Renovar**: un solo envío
+que cierra la vencida y emite la nueva. Al renovar, la vencida queda en
+`'revocado'`: es semánticamente incorrecto (no se la retiró, expiró sola),
+pero es el único estado terminal que existe hoy; `'pendiente'` la haría
+pasar por pausada y reanudable. Consecuencia: el folio viejo responde
+"Inactivo" en `/verificar` en vez de "Vencido".
+
+**Propuesta de fondo, sin implementar (requiere migración):** todo lo
+anterior existe porque `certificaciones.estado` no tiene un valor
+`'vencido'`: el CHECK solo admite `'activo'`, `'pendiente'` y
+`'revocado'`, y nada corre cuando pasa `fecha_vencimiento`. La solución
+sería un estado `'vencido'` puesto por un `pg_cron` diario, como el que ya
+marca las suscripciones vencidas (SCHEMA.sql v1.7). Con eso el índice único,
+el panel y las etiquetas funcionarían sin derivar nada, y renovar dejaría de
+necesitar `'revocado'`. Se decide aparte.
 
 **Una pantalla estática que muestre estado de sello necesita
 `revalidate`.** El vencimiento ocurre por el paso del tiempo y no dispara

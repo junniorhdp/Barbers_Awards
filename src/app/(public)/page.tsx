@@ -17,7 +17,7 @@ type BarberiaDestacada = {
   fotos: string[];
   foto_portada: string | null;
   estado_sello: string;
-  certificaciones: { estado: string; categoria: string; fecha_vencimiento: string | null }[];
+  certificaciones: { estado: string; categoria: string; fecha_emision: string; fecha_vencimiento: string | null }[];
 };
 
 type SeccionDestacadas = {
@@ -38,11 +38,15 @@ async function obtenerDestacadas(): Promise<SeccionDestacadas> {
   // categoria = 'calidad' (SCHEMA.sql v1.6): un reconocimiento adicional (ej.
   // "Bioseguridad") no debe hacer que una barbería sin Gold/Silver aparezca
   // como "destacada" aquí.
+  // 'activo' no basta: una certificación vencida no hace "destacada" a una
+  // barbería (DESIGN.md 13.1).
+  const ahora = new Date().toISOString();
   const { data: certificadas } = await supabase
     .from("certificaciones")
-    .select("fecha_emision, barberias ( id, nombre, slug, ciudad, zona, fotos, foto_portada, estado_sello, certificaciones ( estado, categoria, fecha_vencimiento ) )")
+    .select("fecha_emision, barberias ( id, nombre, slug, ciudad, zona, fotos, foto_portada, estado_sello, certificaciones ( estado, categoria, fecha_emision, fecha_vencimiento ) )")
     .eq("estado", "activo")
     .eq("categoria", "calidad")
+    .or(`fecha_vencimiento.is.null,fecha_vencimiento.gt.${ahora}`)
     .order("fecha_emision", { ascending: false })
     .limit(6);
 
@@ -56,7 +60,7 @@ async function obtenerDestacadas(): Promise<SeccionDestacadas> {
 
   const { data: recientes } = await supabase
     .from("barberias")
-    .select("id, nombre, slug, ciudad, zona, fotos, foto_portada, estado_sello, certificaciones ( estado, categoria, fecha_vencimiento )")
+    .select("id, nombre, slug, ciudad, zona, fotos, foto_portada, estado_sello, certificaciones ( estado, categoria, fecha_emision, fecha_vencimiento )")
     .neq("estado_sello", "inactivo")
     .order("created_at", { ascending: false })
     .limit(6);

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/public";
+import { certificacionVencida } from "@/lib/certificaciones";
 
 // CU-04: sin caché — un sello revocado debe verse inactivo de inmediato.
 export const dynamic = "force-dynamic";
@@ -56,11 +57,8 @@ export default async function VerificarFolioPage({
     return <NoEncontrado folio={folio} />;
   }
 
-  const vencida = Boolean(
-    certificacion.estado === "activo" &&
-      certificacion.fecha_vencimiento &&
-      new Date(certificacion.fecha_vencimiento) < new Date(),
-  );
+  // Mismo criterio para nivel de calidad y reconocimiento (DESIGN.md 13.1).
+  const vencida = certificacion.estado === "activo" && certificacionVencida(certificacion.fecha_vencimiento);
 
   const estado: EstadoBadge = vencida
     ? "vencido"

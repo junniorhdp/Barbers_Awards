@@ -1,9 +1,14 @@
 import Link from "next/link";
 import Image from "next/image";
 import { publicStorageUrl } from "@/lib/storage";
-import { certificacionVencida } from "@/lib/certificaciones";
+import { certificacionCalidadActual, situacionSello } from "@/lib/certificaciones";
 
-type CertificacionResumen = { estado: string; categoria: string; fecha_vencimiento: string | null };
+type CertificacionResumen = {
+  estado: string;
+  categoria: string;
+  fecha_emision: string;
+  fecha_vencimiento: string | null;
+};
 
 type BarberiaResumen = {
   slug: string;
@@ -27,10 +32,10 @@ type BarberiaResumen = {
   tieneReconocimientos?: boolean;
 };
 
-// El estado del sello se deriva de certificaciones, no de estado_sello: ese
-// campo no se actualiza al vencer una certificación y vuelve a 'pendiente'
-// tanto al pausar como al revocar (DESIGN.md 13.1). El caso por defecto es el
-// más conservador: revocada, vencida o nunca auditada dice "Sin certificación".
+// La etiqueta describe la situación actual, no el historial: se deriva de la
+// certificación de calidad más reciente, nunca de estado_sello ni de
+// certificaciones antiguas (DESIGN.md 13.1). El caso por defecto es el más
+// conservador: revocada, vencida o sin certificación dice "Sin certificación".
 function EstadoSelloTag({
   estadoSello,
   certificaciones,
@@ -47,21 +52,19 @@ function EstadoSelloTag({
       </span>
     );
   }
-  const calidadVigente = certificaciones.some(
-    (c) => c.categoria === "calidad" && c.estado === "activo" && !certificacionVencida(c.fecha_vencimiento),
-  );
-  if (calidadVigente && estadoSello === "gold") {
-    return <span className="rounded-full bg-gold/15 px-2 py-0.5 text-xs font-medium text-gold">Sello Gold</span>;
-  }
-  if (calidadVigente && estadoSello === "silver") {
-    return <span className="rounded-full bg-silver/15 px-2 py-0.5 text-xs font-medium text-silver">Sello Silver</span>;
-  }
-  if (certificaciones.some((c) => c.categoria === "calidad" && c.estado === "pendiente")) {
+  const situacion = situacionSello(certificacionCalidadActual(certificaciones));
+  if (situacion === "en-verificacion") {
     return (
       <span className="rounded-full border border-violet-neon px-2 py-0.5 text-xs font-medium text-violet-neon">
         En verificación
       </span>
     );
+  }
+  if (situacion === "vigente" && estadoSello === "gold") {
+    return <span className="rounded-full bg-gold/15 px-2 py-0.5 text-xs font-medium text-gold">Sello Gold</span>;
+  }
+  if (situacion === "vigente" && estadoSello === "silver") {
+    return <span className="rounded-full bg-silver/15 px-2 py-0.5 text-xs font-medium text-silver">Sello Silver</span>;
   }
   return (
     <span className="rounded-full border border-line px-2 py-0.5 text-xs font-medium text-muted">

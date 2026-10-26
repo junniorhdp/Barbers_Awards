@@ -188,13 +188,26 @@ las decisiones de diseño abiertas)
   cliente a ASECOP y el staff tendría una razón económica para no revocar;
   un auditor con incentivos para no revocar hace que el sello no
   signifique nada. Con la opción A revocar es barato y el sello se puede
-  defender. Implementación: `EstadoSelloTag` (`BarberiaCard`) deriva la
-  etiqueta así: suscripción no vigente → "No vigente"; `estado_sello`
-  gold/silver → "Sello Gold"/"Sello Silver"; certificación de calidad en
-  `'pendiente'` → "En verificación"; cualquier otro caso → "Sin
-  certificación". El caso por defecto es el conservador, no el favorable.
+  defender. Implementación: `EstadoSelloTag` (`BarberiaCard`) y el hero
+  del perfil derivan la etiqueta de la certificación de calidad **actual**
+  (`src/lib/certificaciones.ts`): la activa si existe, si no la más
+  reciente por `fecha_emision`; nunca del historial:
+  suscripción no vigente → "No vigente"; sin certificación de calidad →
+  "Sin certificación"; la más reciente en `'pendiente'` → "En
+  verificación"; la más reciente activa y no vencida → "Sello Gold"/"Sello
+  Silver" según `estado_sello`; cualquier otro caso (revocada, o activa
+  pero vencida) → "Sin certificación". El caso por defecto es el
+  conservador, no el favorable.
   `estado_sello` y `cambiarEstadoCertificacion()` no cambian; solo dejan de
   ser la única fuente de la etiqueta. `certificaciones` es obligatorio en el
   tipo de la tarjeta. Sigue abierto pausada vs. nunca auditada
   (`docs/DESIGN.md` 13.1).
+- Pausar es reversible, revocar no (2026-10-26): `reanudarCertificacion()`
+  devuelve a `'activo'` una certificación pausada (`'pendiente'`), con el
+  mismo folio, y restaura `barberias.estado_sello` a su nivel. Solo aplica
+  a certificaciones pausadas y, si es de calidad, a la más reciente de la
+  barbería; una revocada no se reanuda, se emite una nueva. En
+  `/admin/certificaciones`, una calidad pausada muestra "Reanudar" (y
+  "Revocar") en lugar de "Asignar sello", para no fabricar folios huérfanos
+  re-emitiendo.
 - (agrega aquí cada decisión nueva que cierres, con fecha)

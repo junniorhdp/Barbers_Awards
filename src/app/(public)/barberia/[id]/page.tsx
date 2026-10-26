@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Playfair_Display, Poppins } from "next/font/google";
 import { createClient } from "@/lib/supabase/public";
 import { publicStorageUrl } from "@/lib/storage";
-import { certificacionVencida } from "@/lib/certificaciones";
+import { certificacionCalidadActual, certificacionVencida, situacionSello } from "@/lib/certificaciones";
 import { esAcentoValido } from "@/lib/accent";
 import { esLogoValido } from "@/lib/logo-presets";
 import { PerfilHeader } from "@/components/perfil/PerfilHeader";
@@ -131,13 +131,18 @@ export default async function PerfilBarberiaPage({
   const suscripcionVigente = b.estado_suscripcion === "activa" || b.estado_suscripcion === "prueba";
   const puedeReservar = Boolean(b.telefono_whatsapp);
 
-  const certificacionActiva =
-    certificaciones.find((c) => c.estado === "activo" && c.categoria === "calidad") ?? null;
-  const vencida = certificacionVencida(certificacionActiva?.fecha_vencimiento);
+  // La situación actual del sello sale de la certificación de calidad más
+  // reciente, no del historial ni de estado_sello (DESIGN.md 13.1).
+  const calidadActual = certificacionCalidadActual(certificaciones);
+  const situacion = situacionSello(calidadActual);
+  const haySelloQueMostrar = situacion === "en-verificacion" || situacion === "vigente" || situacion === "vencida";
   // Reconocimientos (CU-18/CU-19): se acumulan sin límite, nunca reemplazan
   // ni compiten con el nivel de calidad — se agrupan detrás de "+N más".
+  // 'activo' no basta: uno vencido no se muestra (DESIGN.md 13.1).
   const reconocimientosActivos = certificaciones
-    .filter((c) => c.estado === "activo" && c.categoria === "reconocimiento")
+    .filter(
+      (c) => c.estado === "activo" && c.categoria === "reconocimiento" && !certificacionVencida(c.fecha_vencimiento),
+    )
     .map((c) => ({
       folio_verificacion: c.folio_verificacion,
       fecha_emision: c.fecha_emision,
@@ -226,21 +231,21 @@ export default async function PerfilBarberiaPage({
             </div>
           </div>
 
-          {certificacionActiva || reconocimientosActivos.length > 0 ? (
+          {haySelloQueMostrar || reconocimientosActivos.length > 0 ? (
             <div className="hero-sello">
-              {!suscripcionVigente ? (
+              {!haySelloQueMostrar ? null : !suscripcionVigente ? (
                 <SealBadge estado="no-vigente" />
-              ) : certificacionActiva ? (
+              ) : situacion === "en-verificacion" ? (
+                <SealBadge estado="en-verificacion" />
+              ) : calidadActual ? (
                 <SealBadge
                   estado="sello"
-                  nombreSello={certificacionActiva.catalogo_sellos?.nombre_sello ?? "Certificado"}
-                  folio={certificacionActiva.folio_verificacion}
-                  colorHex={certificacionActiva.catalogo_sellos?.color_hex ?? null}
-                  vencido={vencida}
+                  nombreSello={calidadActual.catalogo_sellos?.nombre_sello ?? "Certificado"}
+                  folio={calidadActual.folio_verificacion}
+                  colorHex={calidadActual.catalogo_sellos?.color_hex ?? null}
+                  vencido={situacion === "vencida"}
                 />
-              ) : (
-                <SealBadge estado="en-verificacion" />
-              )}
+              ) : null}
               <ReconocimientosBadge reconocimientos={reconocimientosActivos} />
             </div>
           ) : null}

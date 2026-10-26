@@ -6,9 +6,16 @@ import Link from "next/link";
 import {
   emitirCertificacion,
   pausarCertificacion,
+  reanudarCertificacion,
   revocarCertificacion,
   type FormState,
 } from "@/app/admin/(protected)/actions";
+import {
+  certificacionCalidadActual,
+  certificacionVencida,
+  situacionSello,
+  type SituacionSello,
+} from "@/lib/certificaciones";
 
 const estadoInicial: FormState = {};
 
@@ -33,18 +40,32 @@ type Sello = { id: string; nombre_sello: string; nivel: string | null };
 
 const FORMATTER_FECHA = new Intl.DateTimeFormat("es-CO", { dateStyle: "medium", timeZone: "America/Bogota" });
 
+// "Sello actual" derivado de las certificaciones, no leído de estado_sello,
+// que no se entera de un vencimiento (DESIGN.md 13.1). En la aplicación todo
+// 'pendiente' viene de una pausa.
+function etiquetaSelloActual(situacion: SituacionSello, estadoSello: string): string {
+  if (situacion === "vigente") return estadoSello === "silver" ? "Silver vigente" : "Gold vigente";
+  if (situacion === "vencida") return "Vencido";
+  if (situacion === "en-verificacion") return "Pausado";
+  if (situacion === "revocada") return "Revocado";
+  return "Sin certificación";
+}
+
 function FormularioAsignar({
   barberiaId,
   sellos,
   onListo,
   textoBoton,
   sinSellosTexto,
+  renovarId,
 }: {
   barberiaId: string;
   sellos: Sello[];
   onListo: () => void;
   textoBoton: string;
   sinSellosTexto: string;
+  // Si viene, el envío cierra esa certificación vencida antes de emitir.
+  renovarId?: string;
 }) {
   const [state, formAction, pending] = useActionState(emitirCertificacion, estadoInicial);
 
@@ -68,6 +89,7 @@ function FormularioAsignar({
   return (
     <form action={formAction} className="flex flex-col gap-3 rounded border border-line bg-carbon p-4">
       <input type="hidden" name="barberiaId" value={barberiaId} />
+      {renovarId ? <input type="hidden" name="renovarId" value={renovarId} /> : null}
 
       <div className="flex flex-col gap-1">
         <label htmlFor={`sello-${barberiaId}-${sellos[0]?.id}`} className="text-sm text-muted">
@@ -133,6 +155,12 @@ export function CertificacionesManager({
     if (!resultado.error) router.refresh();
   }
 
+  async function reanudar(certificacionId: string) {
+    const resultado = await reanudarCertificacion(certificacionId);
+    setError(resultado.error ?? null);
+    if (!resultado.error) router.refresh();
+  }
+
   async function revocar(certificacionId: string) {
     const resultado = await revocarCertificacion(certificacionId);
     setError(resultado.error ?? null);
@@ -157,6 +185,14 @@ export function CertificacionesManager({
       {barberias.map((barberia) => {
         const calidadActiva =
           barberia.certificaciones.find((c) => c.categoria === "calidad" && c.estado === "activo") ?? null;
+        // Pausada = la de calidad más reciente está en 'pendiente'. Se ofrece
+        // reanudarla en vez de emitir otra, para no dejar folios huérfanos.
+        const calidadMasReciente = certificacionCalidadActual(barberia.certificaciones);
+        // 'activo' no basta: una vencida se muestra como vencida y se renueva.
+        const calidadVencida =
+          calidadActiva && certificacionVencida(calidadActiva.fecha_vencimiento) ? calidadActiva : null;
+        const calidadPausada =
+          !calidadActiva && calidadMasReciente?.estado === "pendiente" ? calidadMasReciente : null;
         const reconocimientosActivos = barberia.certificaciones.filter(
           (c) => c.categoria === "reconocimiento" && c.estado === "activo",
         );
@@ -166,7 +202,9 @@ export function CertificacionesManager({
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="font-medium text-ink">{barberia.nombre}</p>
-                <p className="text-xs uppercase tracking-wide text-muted">Sello actual: {barberia.estado_sello}</p>
+                <p className="text-xs uppercase tracking-wide text-muted">
+                  Sello actual: {etiquetaSelloActual(situacionSello(calidadMasReciente), barberia.estado_sello)}
+                </p>
               </div>
               <Link href={`/barberia/${barberia.slug}`} target="_blank" className="text-sm text-violet-neon underline">
                 Ver perfil
@@ -176,7 +214,43 @@ export function CertificacionesManager({
             {/* --- Nivel de calidad: excluyente, un slot --- */}
             <div className="flex flex-col gap-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-gold">Nivel de calidad</p>
-              {calidadActiva ? (
+              {calidadVencida && asignandoCalidadId === barberia.id ? (
+                <FormularioAsignar
+                  barberiaId={barberia.id}
+                  sellos={sellosCalidad}
+                  textoBoton="Renovar certificación"
+                  sinSellosTexto="No hay sellos de calidad en el catálogo todavía. Crea uno en"
+                  renovarId={calidadVencida.id}
+                  onListo={() => {
+                    setAsignandoCalidadId(null);
+                    router.refresh();
+                  }}
+                />
+              ) : calidadVencida ? (
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded border border-line bg-carbon p-3 text-sm">
+                  <div>
+                    <p className="text-red-400">
+                      Vencida el {FORMATTER_FECHA.format(new Date(calidadVencida.fecha_vencimiento as string))}
+                    </p>
+                    <p className="text-muted">
+                      Folio <span className="font-mono">{calidadVencida.folio_verificacion}</span> · emitido el{" "}
+                      {FORMATTER_FECHA.format(new Date(calidadVencida.fecha_emision))}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setAsignandoCalidadId(barberia.id)}
+                      className="rounded bg-violet px-3 py-1.5 font-medium text-white"
+                    >
+                      Renovar
+                    </button>
+                    <button type="button" onClick={() => revocar(calidadVencida.id)} className="text-red-400 underline">
+                      Revocar
+                    </button>
+                  </div>
+                </div>
+              ) : calidadActiva ? (
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded border border-line bg-carbon p-3 text-sm">
                   <div>
                     <p className="text-ink">
@@ -194,6 +268,30 @@ export function CertificacionesManager({
                       Pausar
                     </button>
                     <button type="button" onClick={() => revocar(calidadActiva.id)} className="text-red-400 underline">
+                      Revocar
+                    </button>
+                  </div>
+                </div>
+              ) : calidadPausada ? (
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded border border-line bg-carbon p-3 text-sm">
+                  <div>
+                    <p className="text-ink">
+                      Pausada · folio <span className="font-mono">{calidadPausada.folio_verificacion}</span>
+                    </p>
+                    <p className="text-muted">
+                      Emitido el {FORMATTER_FECHA.format(new Date(calidadPausada.fecha_emision))}. Reanudarla
+                      conserva el mismo folio.
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => reanudar(calidadPausada.id)}
+                      className="rounded bg-violet px-3 py-1.5 font-medium text-white"
+                    >
+                      Reanudar
+                    </button>
+                    <button type="button" onClick={() => revocar(calidadPausada.id)} className="text-red-400 underline">
                       Revocar
                     </button>
                   </div>
@@ -227,32 +325,46 @@ export function CertificacionesManager({
                 <p className="text-sm text-muted">Ninguno todavía.</p>
               ) : (
                 <div className="flex flex-col gap-2">
-                  {reconocimientosActivos.map((reco) => (
-                    <div
-                      key={reco.id}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded border border-line bg-carbon p-3 text-sm"
-                    >
-                      <div>
-                        <p className="text-ink">
-                          Folio <span className="font-mono">{reco.folio_verificacion}</span>
-                        </p>
-                        <p className="text-muted">
-                          Emitido el {FORMATTER_FECHA.format(new Date(reco.fecha_emision))}
-                          {reco.fecha_vencimiento
-                            ? ` · vence ${FORMATTER_FECHA.format(new Date(reco.fecha_vencimiento))}`
-                            : " · sin vencimiento"}
-                        </p>
+                  {reconocimientosActivos.map((reco) => {
+                    // 'activo' no basta: un reconocimiento vencido se marca
+                    // como tal y no se pausa (DESIGN.md 13.1).
+                    const vencido = certificacionVencida(reco.fecha_vencimiento);
+                    return (
+                      <div
+                        key={reco.id}
+                        className="flex flex-wrap items-center justify-between gap-3 rounded border border-line bg-carbon p-3 text-sm"
+                      >
+                        <div>
+                          {vencido ? (
+                            <p className="text-red-400">
+                              Vencido el {FORMATTER_FECHA.format(new Date(reco.fecha_vencimiento as string))}
+                            </p>
+                          ) : null}
+                          <p className="text-ink">
+                            Folio <span className="font-mono">{reco.folio_verificacion}</span>
+                          </p>
+                          <p className="text-muted">
+                            Emitido el {FORMATTER_FECHA.format(new Date(reco.fecha_emision))}
+                            {vencido
+                              ? ""
+                              : reco.fecha_vencimiento
+                                ? ` · vence ${FORMATTER_FECHA.format(new Date(reco.fecha_vencimiento))}`
+                                : " · sin vencimiento"}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          {vencido ? null : (
+                            <button type="button" onClick={() => pausar(reco.id)} className="text-violet-neon underline">
+                              Pausar
+                            </button>
+                          )}
+                          <button type="button" onClick={() => revocar(reco.id)} className="text-red-400 underline">
+                            Revocar
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
-                        <button type="button" onClick={() => pausar(reco.id)} className="text-violet-neon underline">
-                          Pausar
-                        </button>
-                        <button type="button" onClick={() => revocar(reco.id)} className="text-red-400 underline">
-                          Revocar
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
