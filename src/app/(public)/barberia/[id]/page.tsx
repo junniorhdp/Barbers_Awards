@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Playfair_Display, Poppins } from "next/font/google";
 import { createClient } from "@/lib/supabase/public";
+import { playfair, poppins } from "@/lib/fonts";
 import { publicStorageUrl } from "@/lib/storage";
 import { certificacionCalidadActual, certificacionVigente, situacionSello } from "@/lib/certificaciones";
 import { esAcentoValido } from "@/lib/accent";
@@ -25,8 +25,6 @@ import "../perfil.css";
 
 export const revalidate = 300; // ARCHITECTURE.md 3.5: red de seguridad de ~5 min
 
-const playfair = Playfair_Display({ subsets: ["latin"], weight: ["600", "700", "800"], variable: "--font-playfair" });
-const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700"], variable: "--font-poppins" });
 
 type Servicio = {
   id: string;

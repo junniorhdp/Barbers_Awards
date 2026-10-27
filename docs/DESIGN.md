@@ -58,7 +58,19 @@ la app, y ningún token de la plataforma entra al perfil.
 | `--text-dark` | `#2a2a2a` | Texto sobre crema |
 | `--text-light` | `#f5f0e6` | Texto sobre oscuro |
 
-### 1.3 La franja de pertenencia
+### 1.3 Excepción: la tipografía de marca
+
+Decidido el 2026-10-26 (decisión A): **Playfair Display es tipografía de
+marca**, no solo del micrositio. Puede usarse en los dos temas, pero **solo
+para display**: el nivel del sello y los títulos de certificado. **Nunca para
+texto corrido.**
+
+Es una excepción explícita a la frontera de 1.2: **la frontera es el color y
+el sistema, no la tipografía de marca.** Se define una sola vez en
+`src/lib/fonts.ts` y la importan el perfil y `SealBadge`; next/font la sirve
+sin duplicar archivos.
+
+### 1.4 La franja de pertenencia
 
 El perfil lleva una franja superior que lo identifica como parte de Barbers
 Awards (`perfil.css`, "franja de la plataforma"). Es el único punto donde
@@ -403,9 +415,19 @@ quita de aquí.
 
 ### 13.1 El sello
 
-**Hoy:** `SealBadge` es una píldora con degradado y sombra de color — el
-mismo acabado que D2 quitó de los botones — y muestra solo el nombre del
-sello (por ejemplo, "Gold"). Enlaza al folio, pero no lo muestra.
+**Implementado en parte (2026-10-26):** existe la marca del sello
+(`SelloMarca`, un SVG de `viewBox` 48 × 48 con marco dentado, anillo
+interior opcional y un glifo central: vigente ✓, en proceso, revocado ✕,
+pausado). `SealBadge` dejó de ser una píldora con degradado y sombra de color:
+es una tarjeta oscura de esquina 2px con borde superior en el color del
+estado, la marca a la izquierda y el nivel en Playfair con "Verificar folio
+→". La etiqueta del directorio sigue siendo píldora y lleva la marca pequeña.
+Falta lo de abajo que no está en esa lista: la entidad emisora y el folio
+visibles, y `/verificar/[folio]`.
+
+**Antes:** `SealBadge` era una píldora con degradado y sombra de color — el
+mismo acabado que D2 quitó de los botones — y mostraba solo el nombre del
+sello (por ejemplo, "Gold").
 
 **La propuesta:** el sello se lee como certificación cuando trae cuatro
 cosas: **marca** (Barbers Awards), **nivel** (Gold / Silver), **entidad

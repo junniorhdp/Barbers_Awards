@@ -246,12 +246,12 @@
 .perfil .hero-stats strong { display: block; font-family: "Playfair Display", serif; font-size: 30px; color: var(--brand-light); }
 .perfil .hero-stats span { font-size: 12.5px; color: #c9c3b6; letter-spacing: .5px; }
 
-/* El sello, en una tarjeta sobre la foto. Visible en todas las anchuras: es
-   el argumento de venta y la mayoría del tráfico es móvil. */
+/* El sello sobre la foto. Visible en todas las anchuras: es el argumento de
+   venta y la mayoría del tráfico es móvil. SealBadge ya es una tarjeta
+   oscura (2026-10-26), así que aquí solo se apila con "+N más", sin otra
+   tarjeta alrededor. */
 .perfil .hero-sello {
   display: flex; flex-direction: column; align-items: flex-start; gap: 10px;
-  background: rgba(16, 16, 18, .62); border: 1px solid rgba(255, 255, 255, .14);
-  backdrop-filter: blur(10px); border-radius: var(--radio); padding: 18px 20px;
 }
 
 /* OpenNowBadge: etiqueta de estado en píldora (DESIGN.md 6.6), en la fila

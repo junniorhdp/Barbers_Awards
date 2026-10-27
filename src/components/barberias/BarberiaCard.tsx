@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { publicStorageUrl } from "@/lib/storage";
 import { certificacionCalidadActual, situacionSello } from "@/lib/certificaciones";
+import { SelloMarca } from "@/components/sellos/SelloMarca";
 
 type CertificacionResumen = {
   estado: string;
@@ -36,6 +37,12 @@ type BarberiaResumen = {
 // certificación de calidad más reciente, nunca de estado_sello ni de
 // certificaciones antiguas (DESIGN.md 13.1). El caso por defecto es el más
 // conservador: revocada, vencida o sin certificación dice "Sin certificación".
+//
+// Presentación: píldora compacta (es una etiqueta, DESIGN.md 6.6) con la
+// marca pequeña en el color del texto (currentColor). La marca acompaña al
+// texto, así que va oculta a los lectores de pantalla.
+const PILDORA = "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium";
+
 function EstadoSelloTag({
   estadoSello,
   certificaciones,
@@ -47,7 +54,8 @@ function EstadoSelloTag({
 }) {
   if (!suscripcionVigente) {
     return (
-      <span className="rounded-full border border-muted px-2 py-0.5 text-xs font-medium text-muted">
+      <span className={`${PILDORA} border border-muted text-muted`}>
+        <SelloMarca tamano={14} glifo="pausado" apagado anillo={false} />
         No vigente
       </span>
     );
@@ -55,19 +63,31 @@ function EstadoSelloTag({
   const situacion = situacionSello(certificacionCalidadActual(certificaciones));
   if (situacion === "en-verificacion") {
     return (
-      <span className="rounded-full border border-violet-neon px-2 py-0.5 text-xs font-medium text-violet-neon">
+      <span className={`${PILDORA} border border-violet-neon text-violet-neon`}>
+        <SelloMarca tamano={14} glifo="en-proceso" apagado anillo={false} />
         En verificación
       </span>
     );
   }
   if (situacion === "vigente" && estadoSello === "gold") {
-    return <span className="rounded-full bg-gold/15 px-2 py-0.5 text-xs font-medium text-gold">Sello Gold</span>;
+    return (
+      <span className={`${PILDORA} bg-gold/15 text-gold`}>
+        <SelloMarca tamano={14} glifo="vigente" anillo={false} />
+        Sello Gold
+      </span>
+    );
   }
   if (situacion === "vigente" && estadoSello === "silver") {
-    return <span className="rounded-full bg-silver/15 px-2 py-0.5 text-xs font-medium text-silver">Sello Silver</span>;
+    return (
+      <span className={`${PILDORA} bg-silver/15 text-silver`}>
+        <SelloMarca tamano={14} glifo="vigente" anillo={false} />
+        Sello Silver
+      </span>
+    );
   }
   return (
-    <span className="rounded-full border border-line px-2 py-0.5 text-xs font-medium text-muted">
+    <span className={`${PILDORA} border border-line text-muted`}>
+      <SelloMarca tamano={14} glifo="ninguno" apagado anillo={false} />
       Sin certificación
     </span>
   );
