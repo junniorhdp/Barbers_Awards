@@ -187,6 +187,12 @@ export const NIVELES_SELLO = ["Gold", "Silver"] as const;
 // valor de relleno (SCHEMA.sql v1.6 lo hizo nullable a propósito).
 export const CATEGORIAS_SELLO = ["calidad", "reconocimiento"] as const;
 
+// "Requisitos del estándar" se muestra ENTERO en /verificar/[folio], nunca
+// recortado (cortar una promesa a mitad de frase es peor que no mostrarla).
+// El tope evita que desborde el certificado: 280 caracteres son dos o tres
+// frases, lo que cabe bajo el nombre del nivel sin empujar al resto.
+export const REQUISITOS_MAX = 280;
+
 // Conectores de 2 o 3 letras que, en un nombre escrito todo en mayúsculas, no
 // son siglas y se pasan a minúscula ("LIMPIEZA DE BAÑOS" → "Limpieza de baños").
 const CONECTORES = new Set(["de", "del", "la", "las", "el", "los", "en", "con", "por", "sin", "al", "una", "un"]);
@@ -227,7 +233,7 @@ export const SelloSchema = z
       .string()
       .trim()
       .transform((v) => (v === "" ? null : v)),
-    requisitos: opcional(2000),
+    requisitos: opcional(REQUISITOS_MAX),
     entidadEmisora: z.string().trim().min(2, "Ingresa la entidad emisora.").max(120),
     colorHex: z
       .string()

@@ -3,7 +3,7 @@
 import { useState, useActionState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { crearSello, actualizarSello, eliminarSello, type FormState } from "@/app/admin/(protected)/actions";
-import { NIVELES_SELLO, CATEGORIAS_SELLO } from "@/lib/validators";
+import { NIVELES_SELLO, CATEGORIAS_SELLO, REQUISITOS_MAX } from "@/lib/validators";
 
 const estadoInicial: FormState = {};
 
@@ -27,6 +27,7 @@ function FormularioSello({ sello, onGuardado }: { sello?: Sello; onGuardado: () 
   const [state, formAction, pending] = useActionState(accion, estadoInicial);
   const formRef = useRef<HTMLFormElement>(null);
   const [categoria, setCategoria] = useState(sello?.categoria ?? "calidad");
+  const [largoRequisitos, setLargoRequisitos] = useState((sello?.requisitos ?? "").length);
 
   useEffect(() => {
     if (state.success) {
@@ -37,6 +38,7 @@ function FormularioSello({ sello, onGuardado }: { sello?: Sello; onGuardado: () 
         // de render: mismo criterio que OpenNowBadge para este lint.
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setCategoria("calidad");
+        setLargoRequisitos(0);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -121,8 +123,17 @@ function FormularioSello({ sello, onGuardado }: { sello?: Sello; onGuardado: () 
           name="requisitos"
           defaultValue={sello?.requisitos ?? ""}
           rows={3}
+          maxLength={REQUISITOS_MAX}
+          onChange={(e) => setLargoRequisitos(e.target.value.length)}
+          aria-describedby="requisitos-ayuda"
           className="rounded border border-line bg-carbon px-3 py-2 text-ink"
         />
+        <p id="requisitos-ayuda" className="flex justify-between gap-3 text-xs text-muted">
+          <span>Se muestra completo en la página de verificación del folio. Si lo dejas vacío, no aparece.</span>
+          <span aria-live="polite" className="shrink-0 tabular-nums">
+            {largoRequisitos}/{REQUISITOS_MAX}
+          </span>
+        </p>
       </div>
 
       <div className="flex gap-3">

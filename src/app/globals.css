@@ -17,3 +17,18 @@
 }
 
 body { background: var(--color-carbon); color: var(--color-ink); }
+
+/* SelloMarca con dibujar (/verificar, caso positivo, DESIGN.md 13.2): el
+   trazo se dibuja UNA sola vez al cargar y se queda quieto. Nada de bucles,
+   latidos ni brillos: un símbolo que se mueve sin parar es el recurso de las
+   webs que venden sellos falsos. Solo cambia el trazo y el relleno, así que
+   nada de la página se mueve ni cambia de altura mientras ocurre. */
+.sello-dibujo .sello-trazo { stroke-dasharray: 1; animation: sello-dibujo .5s ease-out both; }
+.sello-dibujo .sello-anillo { animation-delay: .15s; }
+.sello-dibujo .sello-glifo { animation-duration: .3s; animation-delay: .3s; }
+.sello-dibujo .sello-marco { animation: sello-dibujo .5s ease-out both, sello-relleno .25s ease-out .35s both; }
+@keyframes sello-dibujo { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes sello-relleno { from { fill-opacity: 0; } to { fill-opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .sello-dibujo .sello-trazo { animation: none; }
+}

@@ -620,30 +620,76 @@ Sin `revalidate`, la página derivaría bien el estado una vez y lo dejaría
 congelado. La landing y el perfil usan 300 s, y el directorio es dinámico:
 las tres pantallas no pueden discrepar por más de cinco minutos.
 
-### 13.2 `/verificar/[folio]`
+### 13.2 `/verificar/[folio]` — implementado (2026-10-26)
 
 Es el momento de máxima verdad: alguien duda y escribe el folio. **El
 veredicto debe leerse en un segundo**, y los desenlaces negativos con la
 misma claridad que el positivo.
 
-Cuatro desenlaces:
+**La regla de la página: verifica UN folio y dice la verdad sobre ESE
+folio.** En la página de un **reconocimiento** no aparece nunca el nivel de
+calidad de la barbería: son certificaciones distintas, con folios y estados
+distintos, y una barbería puede tener el reconocimiento vigente y el nivel
+vencido. Para el cuadro completo, la página enlaza al perfil. En la de
+**calidad**, el título es el **nivel** (Gold/Silver, de `catalogo_sellos.nivel`),
+no el nombre del sello, igual que el directorio.
 
-1. **Vigente.**
-2. **Folio inexistente** — el caso de fraude: alguien muestra un sello que
-   no emitimos. Tiene que decirlo sin rodeos.
-3. **Revocada.**
-4. **Vencida.**
+Seis desenlaces, decididos solo con la certificación consultada:
+
+| Caso | Veredicto | Color | Marca |
+|---|---|---|---|
+| Calidad vigente | "Certificación vigente" | verde (veredicto); marco del color del nivel | rellena del color del nivel, check |
+| Reconocimiento vigente | "Reconocimiento vigente" | verde (veredicto); marco neutro | contorno neutro, check |
+| Vencida | "Vencida" — "Esta certificación venció" | gris | apagada, sin glifo |
+| Revocada | "Revocada" — "Esta certificación fue retirada" | **rojo**: es el único caso grave | apagada, ✕ |
+| Pausada | "Pausada" — "Esta certificación está suspendida temporalmente" | violeta | apagada, pausa |
+| No existe | "Sin coincidencias" — "Este folio no existe" | gris, con **marco discontinuo** | apagada, sin glifo |
+
+"No existe" va en gris y no en rojo: casi siempre es un folio mal tecleado.
+El texto dice lo necesario: si una barbería te mostró ese código, no está
+certificada por nosotros. Gris en dos casos no confunde: el marco
+discontinuo y el titular los separan.
+
+**El caso positivo es un diploma, no un recibo:** marco fino del color del
+nivel con esquina de 2px, la marca grande y con aire, la barbería en Playfair
+como el elemento más pesado, la entidad emisora como quien firma, fechas en
+palabras y, al pie, el momento de la consulta ("Verificado el … a las …")
+para dejar claro que es una comprobación en vivo. Debajo, los datos del
+folio y una caja "Qué acabas de verificar", distinta según el caso:
+
+- **Calidad:** que el folio corresponde a una auditoría hecha en persona, en
+  el local, y —solo si tiene `fecha_vencimiento`— que renovarla exige una
+  nueva visita de auditoría, no un pago.
+- **Reconocimiento:** que es adicional y no implica ningún nivel de calidad,
+  y que también sale de una auditoría.
+
+**Pendiente: un canal para reportar una barbería que no se parece a lo que
+promete su sello.** La caja de calidad debería decir qué hacer en ese caso,
+pero hoy la plataforma no tiene ninguna vía de contacto con el equipo (ni
+página de contacto, ni correo en el pie, ni formulario). La frase queda fuera
+hasta que exista; no se pone un "escríbenos" que no lleve a ninguna parte.
+
+**La marca se dibuja una sola vez al cargar**, solo en el caso positivo:
+el trazo tarda unos 0,6 s y se queda quieto. Sin bucles, latidos, brillos
+ni rotaciones; un símbolo que se mueve sin parar es el recurso de las webs
+que venden sellos falsos. Un sello revocado o vencido no se dibuja con
+ceremonia. Con `prefers-reduced-motion` aparece ya dibujado, y la animación
+no mueve ni cambia la altura de nada (`SelloMarca` con `dibujar`, estilos en
+`globals.css`).
+
+**Lo que acredita el sello** sale de `catalogo_sellos.requisitos`, que
+escribe quien audita en `/admin/sellos` (máximo 280 caracteres, con
+contador). Se muestra **entero o nada**: vacío, la línea no existe; nunca un
+texto por defecto.
 
 **Distinción que no se negocia:** una suscripción vencida **no** invalida la
 certificación. El perfil puede mostrar el sello como "no vigente", pero esta
-página sigue diciendo la verdad sobre la auditoría. Pago y calidad son
-cosas distintas (decisión 8 de `ARCHITECTURE.md`). Hoy la página ya
-respeta esto —no consulta `estado_suscripcion`— y el rediseño tiene que
-conservarlo.
+página sigue diciendo la verdad sobre la auditoría (decisión 8 de
+`ARCHITECTURE.md`): no consulta `estado_suscripcion`.
 
-"Pausada" no es un estado del esquema: `pausarCertificacion()` deja la
-certificación en `'pendiente'`, el mismo estado que una nunca auditada (ver
-"Problema abierto" en 13.1). Hoy esta página la muestra como "En proceso", igual que una nunca auditada.
+Colores fijos de la plataforma, nunca `color_hex`. Sin caché y con
+`noindex`: cualquier cadena genera una página. "Pausada" es `'pendiente'`
+en el esquema (ver "Problema abierto" en 13.1).
 
 ### 13.3 El flujo de reserva
 
