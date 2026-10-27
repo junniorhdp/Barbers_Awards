@@ -216,7 +216,7 @@ propuesta de rediseño en 13.1 (sin implementar).
 | Categoría | Radio |
 |---|---|
 | Botones, campos, tarjetas, paneles, imágenes | 2px |
-| Insignias de estado (Abierto ahora, reconocimientos, sello) | píldora completa |
+| Insignias de estado (Abierto ahora, etiqueta del sello en el directorio) | píldora completa |
 | Avatares, puntos, íconos sociales | círculo |
 
 El degradado oscuro del hero (hoy, el velo sobre la foto de portada) **no se
@@ -327,8 +327,9 @@ Capas, de abajo arriba:
    - El eslogan y la descripción, si existen.
    - Los dos botones (Ver Servicios / Contáctanos).
    - Las cifras reales: barberos, experiencia, servicios.
-   - **El sello** (`SealBadge` + reconocimientos) en una tarjeta sobre la
-     foto. Se ve en escritorio **y en móvil**: es el argumento de venta.
+   - **El sello** (`SealBadge`) en una tarjeta sobre la foto, con los
+     reconocimientos vigentes listados dentro (13.1). Se ve en escritorio
+     **y en móvil**: es el argumento de venta.
 4. **Indicador de desplazamiento** ("Desliza"): con un hero que llena la
    vista, señalar que hay más abajo importa más, no menos.
 
@@ -443,8 +444,14 @@ Estados a cubrir:
 | Vencido | La certificación pasó su `fecha_vencimiento`: expiró sola. Hoy `SealBadge` lo recibe como la bandera `vencido` y lo muestra apagado |
 | Revocado | El staff retiró la certificación. Distinto de Vencido: a uno lo retiraron, el otro expiró |
 
-Los **reconocimientos adicionales** siguen como píldoras, separados del
-nivel de calidad: son etiquetas, no la certificación (6.6).
+Los **reconocimientos adicionales** viven dentro de la tarjeta del sello
+(2026-10-26), separados del nivel de calidad: el bloque del sello es el
+encabezado y debajo va una lista compacta, cada reconocimiento con su marca
+pequeña (22px, sin anillo) en el color de su propio sello y enlazado a su
+folio. La lista envuelve, nunca hace scroll. Sin nivel de calidad que
+mostrar, la tarjeta lleva "Reconocimientos" como encabezado. Antes se
+escondían tras un chip "+N más" con un modal, lo que contradecía 8.1: un
+reconocimiento es una certificación con folio, no un adorno.
 
 Contextos donde tiene que funcionar: sobre la foto del perfil, en la
 tarjeta del directorio y en grande en la página de verificación.

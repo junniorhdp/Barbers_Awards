@@ -19,8 +19,7 @@ import { CouponCard } from "@/components/perfil/CouponCard";
 import { BotonReservar } from "@/components/perfil/BotonReservar";
 import { WhatsAppBookingSheet } from "@/components/perfil/WhatsAppBookingSheet";
 import { ReservaProvider } from "@/components/perfil/ReservaContext";
-import { SealBadge } from "@/components/sellos/SealBadge";
-import { ReconocimientosBadge } from "@/components/perfil/ReconocimientosBadge";
+import { SealBadge, TarjetaReconocimientos } from "@/components/sellos/SealBadge";
 import "../perfil.css";
 
 export const revalidate = 300; // ARCHITECTURE.md 3.5: red de seguridad de ~5 min
@@ -135,7 +134,8 @@ export default async function PerfilBarberiaPage({
   const situacion = situacionSello(calidadActual);
   const haySelloQueMostrar = situacion === "en-verificacion" || situacion === "vigente" || situacion === "vencida";
   // Reconocimientos (CU-18/CU-19): se acumulan sin límite, nunca reemplazan
-  // ni compiten con el nivel de calidad — se agrupan detrás de "+N más".
+  // ni compiten con el nivel de calidad. Viven dentro de la tarjeta del sello
+  // del hero, cada uno con su folio y el color de su propio sello.
   // 'activo' no basta: uno vencido no se muestra (DESIGN.md 13.1).
   const reconocimientosActivos = certificaciones
     .filter(
@@ -143,8 +143,8 @@ export default async function PerfilBarberiaPage({
     )
     .map((c) => ({
       folio_verificacion: c.folio_verificacion,
-      fecha_emision: c.fecha_emision,
       nombre_sello: c.catalogo_sellos?.nombre_sello ?? "Reconocimiento",
+      color_hex: c.catalogo_sellos?.color_hex ?? null,
     }));
 
   const experienciaTotal = barberos.reduce((total, barbero) => total + barbero.experiencia_anos, 0);
@@ -231,10 +231,12 @@ export default async function PerfilBarberiaPage({
 
           {haySelloQueMostrar || reconocimientosActivos.length > 0 ? (
             <div className="hero-sello">
-              {!haySelloQueMostrar ? null : !suscripcionVigente ? (
-                <SealBadge estado="no-vigente" />
+              {!haySelloQueMostrar ? (
+                <TarjetaReconocimientos reconocimientos={reconocimientosActivos} />
+              ) : !suscripcionVigente ? (
+                <SealBadge estado="no-vigente" reconocimientos={reconocimientosActivos} />
               ) : situacion === "en-verificacion" ? (
-                <SealBadge estado="en-verificacion" />
+                <SealBadge estado="en-verificacion" reconocimientos={reconocimientosActivos} />
               ) : calidadActual ? (
                 <SealBadge
                   estado="sello"
@@ -242,9 +244,9 @@ export default async function PerfilBarberiaPage({
                   folio={calidadActual.folio_verificacion}
                   colorHex={calidadActual.catalogo_sellos?.color_hex ?? null}
                   vencido={situacion === "vencida"}
+                  reconocimientos={reconocimientosActivos}
                 />
               ) : null}
-              <ReconocimientosBadge reconocimientos={reconocimientosActivos} />
             </div>
           ) : null}
         </div>

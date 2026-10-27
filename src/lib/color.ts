@@ -35,6 +35,15 @@ function razonContraste(hexA: string, hexB: string): number {
   return (claro + 0.05) / (oscuro + 0.05);
 }
 
+// Para un trazo de color sobre un fondo fijo (la marca de un reconocimiento
+// sobre la tarjeta oscura del sello): conserva el color del sello si se
+// distingue del fondo (3:1, WCAG para elementos gráficos) y, si no, cae al
+// texto legible sobre ese fondo. color_hex lo elige el staff y puede ser
+// cualquier cosa.
+export function colorSobreFondo(hex: string, fondo: string, minimo = 3): string {
+  return razonContraste(hex, fondo) >= minimo ? hex : colorTextoLegible(fondo);
+}
+
 const TEXTO_OSCURO = "#101012";
 const TEXTO_CLARO = "#FAFAFA";
 
