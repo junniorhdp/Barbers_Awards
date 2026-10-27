@@ -348,6 +348,25 @@ Alto: unos 700px en escritorio y 560px en móvil, con `min-height` — **nunca
 el acento de la barbería y el mismo contenido, sin alto vacío ni ícono de
 imagen rota. Le pasa a toda barbería recién registrada.
 
+### 8.4 El sello y sus reconocimientos: forma y color
+
+Dos reglas, decididas el 2026-10-26:
+
+1. **Marca rellena = nivel de calidad. Marca en contorno = reconocimiento
+   acumulable. No se mezclan.** El nivel va en un bloque relleno del color
+   del sello porque es uno solo y pesa; los reconocimientos van en contorno
+   porque se acumulan y acompañan.
+2. **Dentro de la tarjeta del sello todos los reconocimientos se pintan
+   igual**: la marca y el nombre en el mismo color neutro (`text-ink`), sin
+   consultar `color_hex`. **La jerarquía se consigue con tamaño, nunca con
+   color ni con contraste.**
+
+Por qué la segunda: el color ya significa algo en el sistema — dorado es
+Gold, plata es Silver, gris es no vigente, morado es plataforma. Si cada
+reconocimiento lleva su color, el color deja de ser una señal, y uno teñido
+parece valer más que los demás cuando todos son iguales entre sí. No se
+vuelve a meter color por reconocimiento para "darle vida".
+
 ---
 
 ## 9. Accesibilidad
@@ -455,8 +474,8 @@ Estados a cubrir:
 Los **reconocimientos adicionales** viven dentro de la tarjeta del sello
 (2026-10-26), separados del nivel de calidad: el bloque del sello es el
 encabezado y debajo va una lista compacta, cada reconocimiento con su marca
-pequeña (22px, sin anillo) en el color de su propio sello y enlazado a su
-folio. La lista envuelve, nunca hace scroll. Sin nivel de calidad que
+pequeña en contorno (22px, sin anillo), todas en el mismo color neutro que
+su nombre (8.4), y enlazado a su folio. La lista envuelve, nunca hace scroll. Sin nivel de calidad que
 mostrar, la tarjeta lleva "Reconocimientos" como encabezado. Antes se
 escondían tras un chip "+N más" con un modal, lo que contradecía 8.1: un
 reconocimiento es una certificación con folio, no un adorno.

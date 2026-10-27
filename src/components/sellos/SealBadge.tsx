@@ -22,8 +22,7 @@ const VIOLETA = "#A855F7"; // "En verificación", igual que en el directorio
 // (DESIGN.md 6.1, 13.1): la píldora con degradado y sombra de color era el
 // acabado que D2 quitó de los botones. Solo presentación: qué estado llega lo
 // decide situacionSello() en quien llama.
-// Clases literales: Tailwind no genera clases armadas con variables. El fondo
-// es FONDO_TARJETA_SELLO (ListaReconocimientos lo usa para el contraste).
+// Clases literales: Tailwind no genera clases armadas con variables.
 const TARJETA = "rounded-[2px] border border-white/10 border-t-2 bg-[#141416] px-4 py-3 text-left";
 const BASE = `inline-flex items-center gap-3 ${TARJETA}`;
 // Con reconocimientos, el bloque del sello pasa a ser el encabezado de una

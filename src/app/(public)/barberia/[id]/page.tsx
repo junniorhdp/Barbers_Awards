@@ -135,7 +135,7 @@ export default async function PerfilBarberiaPage({
   const haySelloQueMostrar = situacion === "en-verificacion" || situacion === "vigente" || situacion === "vencida";
   // Reconocimientos (CU-18/CU-19): se acumulan sin límite, nunca reemplazan
   // ni compiten con el nivel de calidad. Viven dentro de la tarjeta del sello
-  // del hero, cada uno con su folio y el color de su propio sello.
+  // del hero, cada uno con su folio, todos en el mismo color neutro.
   // 'activo' no basta: uno vencido no se muestra (DESIGN.md 13.1).
   const reconocimientosActivos = certificaciones
     .filter(
@@ -144,7 +144,6 @@ export default async function PerfilBarberiaPage({
     .map((c) => ({
       folio_verificacion: c.folio_verificacion,
       nombre_sello: c.catalogo_sellos?.nombre_sello ?? "Reconocimiento",
-      color_hex: c.catalogo_sellos?.color_hex ?? null,
     }));
 
   const experienciaTotal = barberos.reduce((total, barbero) => total + barbero.experiencia_anos, 0);

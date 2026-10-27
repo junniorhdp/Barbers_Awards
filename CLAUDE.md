@@ -236,8 +236,11 @@ las decisiones de diseño abiertas)
   el sistema, no la tipografía de marca. Ver `docs/DESIGN.md` 1.3.
 - Los reconocimientos viven dentro de la tarjeta del sello (2026-10-26):
   en el hero, el bloque del sello es el encabezado y debajo van los
-  reconocimientos vigentes, cada uno con su marca de 22px en el color de su
-  propio sello y enlazado a su folio; sin nivel de calidad, la tarjeta se
+  reconocimientos vigentes, cada uno con su marca de 22px en contorno y
+  enlazado a su folio, todos en el mismo color neutro que su nombre (sin
+  `color_hex`: el color es señal de nivel, y uno teñido parecería valer más;
+  marca rellena = nivel, contorno = reconocimiento, `docs/DESIGN.md` 8.4);
+  sin nivel de calidad, la tarjeta se
   titula "Reconocimientos". Se eliminaron el chip "+N más" y su modal
   (`ReconocimientosBadge`): esconderlos contradecía `docs/DESIGN.md` 8.1.
   La jerarquía frente al nivel se logra con tamaño y peso, nunca bajando el
