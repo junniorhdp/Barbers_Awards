@@ -187,9 +187,41 @@ export const NIVELES_SELLO = ["Gold", "Silver"] as const;
 // valor de relleno (SCHEMA.sql v1.6 lo hizo nullable a propósito).
 export const CATEGORIAS_SELLO = ["calidad", "reconocimiento"] as const;
 
+// Conectores de 2 o 3 letras que, en un nombre escrito todo en mayúsculas, no
+// son siglas y se pasan a minúscula ("LIMPIEZA DE BAÑOS" → "Limpieza de baños").
+const CONECTORES = new Set(["de", "del", "la", "las", "el", "los", "en", "con", "por", "sin", "al", "una", "un"]);
+
+// Normaliza el nombre de un sello AL GUARDAR, no al mostrar: el nombre sale en
+// el perfil y en /verificar, y un text-transform en CSS parte feo los nombres
+// largos a 375px. Criterio:
+// - Trim y espacios internos colapsados.
+// - Primera letra en mayúscula; el resto como lo escribió el staff, para
+//   respetar siglas y nombres propios ("Certificación INVIMA" no se toca).
+// - Excepción: si el nombre entero viene en MAYÚSCULAS, se pasa a forma de
+//   oración ("LIMPIEZA EXTREMA" → "Limpieza extrema"), conservando como sigla
+//   cada palabra de 2 o 3 letras que no sea un conector ("ISO 9001",
+//   "BPM certificado"). Nunca se fuerza todo a minúsculas.
+export function normalizarNombreSello(nombre: string): string {
+  const limpio = nombre.trim().replace(/\s+/g, " ");
+  const todoMayusculas =
+    limpio === limpio.toLocaleUpperCase("es") && limpio !== limpio.toLocaleLowerCase("es");
+  const base = todoMayusculas
+    ? limpio
+        .split(" ")
+        .map((palabra) => {
+          const letras = palabra.replace(/[^\p{L}]/gu, "");
+          const esSigla =
+            letras.length >= 2 && letras.length <= 3 && !CONECTORES.has(letras.toLocaleLowerCase("es"));
+          return esSigla ? palabra : palabra.toLocaleLowerCase("es");
+        })
+        .join(" ")
+    : limpio;
+  return base.charAt(0).toLocaleUpperCase("es") + base.slice(1);
+}
+
 export const SelloSchema = z
   .object({
-    nombreSello: z.string().trim().min(2, "Ingresa el nombre del sello.").max(60),
+    nombreSello: z.string().trim().min(2, "Ingresa el nombre del sello.").max(60).transform(normalizarNombreSello),
     categoria: z.enum(CATEGORIAS_SELLO, "Elige una categoría válida."),
     nivel: z
       .string()
@@ -209,7 +241,14 @@ export const SelloSchema = z
     message: "Elige Gold o Silver para un sello de nivel de calidad.",
     path: ["nivel"],
   })
-  .transform((v) => ({ ...v, nivel: v.categoria === "calidad" ? v.nivel : null }));
+  // nivel y color_hex solo aplican a 'calidad'. color_hex pinta el bloque del
+  // nivel en SealBadge; los reconocimientos se pintan todos en un color
+  // neutro (DESIGN.md 8.4) y nunca lo leen, así que para ellos se guarda null.
+  .transform((v) => ({
+    ...v,
+    nivel: v.categoria === "calidad" ? v.nivel : null,
+    colorHex: v.categoria === "calidad" ? v.colorHex : null,
+  }));
 
 export const CertificacionSchema = z.object({
   barberiaId: z.string().uuid("Elige una barbería válida."),

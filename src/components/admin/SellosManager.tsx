@@ -79,8 +79,17 @@ function FormularioSello({ sello, onGuardado }: { sello?: Sello; onGuardado: () 
             name="nombreSello"
             defaultValue={sello?.nombre_sello ?? ""}
             required
+            aria-describedby="nombreSello-ayuda"
             className="rounded border border-line bg-carbon px-3 py-2 text-ink"
           />
+          {/* La normalización no distingue una sigla corta de una palabra
+              corta ("ORO PURO" → "ORO puro"): escribirlo con mayúsculas y
+              minúsculas es la forma de controlar el resultado
+              (normalizarNombreSello en lib/validators.ts). */}
+          <p id="nombreSello-ayuda" className="text-xs text-muted">
+            Si lo escribes todo en MAYÚSCULAS, se convierte automáticamente al guardar. Para controlar el formato
+            exacto, escríbelo como quieres que se vea.
+          </p>
         </div>
         {categoria === "calidad" ? (
           <div className="flex flex-1 flex-col gap-1">
@@ -129,18 +138,23 @@ function FormularioSello({ sello, onGuardado }: { sello?: Sello; onGuardado: () 
             className="rounded border border-line bg-carbon px-3 py-2 text-ink"
           />
         </div>
-        <div className="flex flex-1 flex-col gap-1">
-          <label htmlFor="colorHex" className="text-sm text-muted">
-            Color (hex, opcional)
-          </label>
-          <input
-            id="colorHex"
-            name="colorHex"
-            placeholder="#D4AF37"
-            defaultValue={sello?.color_hex ?? ""}
-            className="rounded border border-line bg-carbon px-3 py-2 text-ink"
-          />
-        </div>
+        {/* Solo para 'calidad': el color pinta el bloque del nivel Gold/Silver.
+            Los reconocimientos se pintan todos en un color neutro (DESIGN.md
+            8.4) y el servidor guarda su color en null. */}
+        {categoria === "calidad" ? (
+          <div className="flex flex-1 flex-col gap-1">
+            <label htmlFor="colorHex" className="text-sm text-muted">
+              Color del nivel (hex, opcional)
+            </label>
+            <input
+              id="colorHex"
+              name="colorHex"
+              placeholder="#D4AF37"
+              defaultValue={sello?.color_hex ?? ""}
+              className="rounded border border-line bg-carbon px-3 py-2 text-ink"
+            />
+          </div>
+        ) : null}
       </div>
 
       {state.error ? <p className="text-sm text-red-400">{state.error}</p> : null}
@@ -189,7 +203,7 @@ export function SellosManager({ sellosIniciales }: { sellosIniciales: Sello[] })
           <div key={sello.id} className="flex flex-col gap-3 rounded border border-line bg-night p-4">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                {sello.color_hex ? (
+                {sello.categoria === "calidad" && sello.color_hex ? (
                   <span
                     className="h-4 w-4 shrink-0 rounded-full border border-line"
                     style={{ background: sello.color_hex }}
