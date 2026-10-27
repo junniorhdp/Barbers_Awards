@@ -58,6 +58,14 @@ la app, y ningún token de la plataforma entra al perfil.
 | `--text-dark` | `#2a2a2a` | Texto sobre crema |
 | `--text-light` | `#f5f0e6` | Texto sobre oscuro |
 
+**Cascada (2026-10-26):** el reinicio de `perfil.css` (`.perfil *`,
+`.perfil a`, `.perfil img`) va dentro de `@layer base`. En Tailwind v4 las
+utilidades viven en una capa, y un CSS sin capa le gana a cualquier regla en
+capa sin importar la especificidad: suelto, ese reinicio anulaba las
+utilidades de los componentes compartidos que se usan dentro del perfil
+(`SealBadge`, la lista de reconocimientos). El resto de `perfil.css` sigue
+sin capa y manda sobre ellas como siempre.
+
 ### 1.3 Excepción: la tipografía de marca
 
 Decidido el 2026-10-26 (decisión A): **Playfair Display es tipografía de
@@ -104,7 +112,7 @@ rompe, la propuesta está mal.
 
 | | Familia | Dónde |
 |---|---|---|
-| Display | **Playfair Display** | `h1`, `h2`, `h3`, `.logo-text` del perfil; cifras destacadas |
+| Display | **Playfair Display** | `h1`, `h2`, `h3`, `.logo-text` del perfil; cifras destacadas; el nivel del sello y los títulos de certificado en los dos temas (1.3) |
 | Cuerpo | **Poppins** | Todo lo demás en el perfil |
 | Plataforma | La de Tailwind por defecto | Paneles, directorio, landing |
 

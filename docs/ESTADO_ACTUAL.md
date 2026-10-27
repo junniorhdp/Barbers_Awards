@@ -166,6 +166,42 @@ acentos, 360px y 320px, y nombre largo.
 - **Poste de barbero eliminado:** era idéntico en todas las barberías; la
   foto es lo único propio de cada una.
 
+## ✅ El sello y las certificaciones (2026-10-26)
+
+Cinco commits, todos en `main` y desplegados:
+
+- **`16b3dcf` y `2d1a0b8`** — siete pantallas mostraban una certificación
+  vencida, revocada o pausada como si estuviera vigente, todas por leer
+  `estado` o `estado_sello` sin mirar la fecha ni el historial. Ahora el
+  estado del sello se deriva de la certificación de calidad actual (la
+  activa si existe, si no la más reciente) con `src/lib/certificaciones.ts`.
+  Una barbería revocada sigue en el directorio con "Sin certificación"
+  (opción A). Pausar es reversible (**Reanudar**, mismo folio) y una
+  certificación vencida se **Renueva** en un paso desde el panel.
+- **`ba1ea9a`** — SCHEMA.sql v1.9: estado `'vencido'` (ver la sección
+  siguiente).
+- **`861195e`** — rediseño visual del sello: nueva marca `SelloMarca` (SVG
+  con glifo de estado); `SealBadge` pasa de píldora con degradado a tarjeta
+  oscura de 2px con el nivel en Playfair; la etiqueta del directorio lleva
+  la marca pequeña. Playfair pasa a ser tipografía de marca
+  (`src/lib/fonts.ts`, DESIGN.md 1.3).
+- **`5f0c8d7`** — los reconocimientos dejan el chip "+N más" y su modal y
+  pasan a listarse dentro de la tarjeta del sello en el hero, cada uno con
+  su marca y enlazado a su folio. Sin nivel de calidad, van en una tarjeta
+  "Reconocimientos".
+  **Lección:** se leían en gris casi invisible (1,3:1) por una causa de
+  cascada, no de color. El reinicio de `perfil.css` estaba fuera de capa, y
+  un CSS sin capa le gana a toda utilidad de Tailwind sin importar la
+  especificidad: `.perfil a { color: inherit }` pisaba `text-ink` y
+  `.perfil * { padding: 0 }` quitaba el relleno de la tarjeta. El reinicio
+  va ahora en `@layer base`. Nombres: 17,6:1 sobre `#141416`.
+
+**Visto en el navegador:** la tarjeta del sello con reconocimientos, que
+reveló el problema de contraste (ya corregido). **Pendiente de revisar tras
+el último despliegue:** los cinco estados de la tarjeta del directorio, los
+del perfil, la tarjeta con uno y con cuatro reconocimientos, solo
+reconocimientos, a 375px, y un `color_hex` deliberadamente malo.
+
 ## ✅ SCHEMA.sql v1.9 — estado 'vencido' (2026-10-26): aplicada en los dos proyectos
 
 `certificaciones.estado` y `barberias.estado_sello` admiten `'vencido'`, y el
@@ -231,8 +267,14 @@ planeación, no un hecho: al 2026-10-16 el dominio no está comprado. Lo
 - El correo de confirmación usa la plantilla por defecto de Supabase.
 - `/verificar/[folio]` funciona, pero está visualmente pobre.
 - **Propuesta sin hacer:** separar la foto de "Nosotros" en su propia
-  columna (`foto_nosotros`, v1.9). Hoy toma una de la galería por una regla
-  que el dueño no controla.
+  columna (`foto_nosotros`, en una migración futura: la v1.9 ya se usó para
+  el estado `'vencido'`). Hoy toma una de la galería por una regla que el
+  dueño no controla.
+- **`/verificar/[folio]`** sigue con su diseño anterior: es la siguiente
+  tarea y usará `SelloMarca` (DESIGN.md 13.2).
+- **El filtro "En verificación" del directorio** busca `estado_sello =
+  'pendiente'`, que incluye barberías revocadas y nunca auditadas cuyas
+  tarjetas dicen "Sin certificación".
 
 ## Frontend
 
@@ -242,7 +284,8 @@ planeación, no un hecho: al 2026-10-16 el dominio no está comprado. Lo
   profesional, la ficha de servicio con duración y precio, y las preguntas
   frecuentes.
 - `docs/DESIGN.md` existe y está aplicado al perfil. D2 resuelta (botón
-  plano). Siguen abiertas: **D1** (reemplazar Poppins), **D3** (cerrada como
+  plano). El sello ya tiene su marca y su tarjeta (13.1, implementado en
+  parte: falta mostrar entidad emisora y folio, y `/verificar`). Siguen abiertas: **D1** (reemplazar Poppins), **D3** (cerrada como
   política, falta el mecanismo de auditoría) y **D4** (referencia de Refero
   para la plataforma, sin elegir).
 - **Hallazgo:** la densidad visual de Barbería Lords viene sobre todo de

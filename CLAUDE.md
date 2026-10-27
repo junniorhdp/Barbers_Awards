@@ -227,4 +227,28 @@ las decisiones de diseño abiertas)
   filtrar, nunca para una etiqueta. La migración se corre a mano en los dos
   proyectos, ANTES del push: el código escribe `'vencido'` al renovar y el
   CHECK viejo lo rechaza.
+- Playfair Display es tipografía de marca (2026-10-26, decisión A): se
+  usa en los dos temas, pero solo para display (el nivel del sello, títulos
+  de certificado), nunca para texto corrido. Se define una sola vez en
+  `src/lib/fonts.ts` y la importan el perfil y `SealBadge`; no va en el
+  layout raíz, para no descargarla en páginas que no la usan. Es una
+  excepción explícita a la frontera entre temas: la frontera es el color y
+  el sistema, no la tipografía de marca. Ver `docs/DESIGN.md` 1.3.
+- Los reconocimientos viven dentro de la tarjeta del sello (2026-10-26):
+  en el hero, el bloque del sello es el encabezado y debajo van los
+  reconocimientos vigentes, cada uno con su marca de 22px en el color de su
+  propio sello y enlazado a su folio; sin nivel de calidad, la tarjeta se
+  titula "Reconocimientos". Se eliminaron el chip "+N más" y su modal
+  (`ReconocimientosBadge`): esconderlos contradecía `docs/DESIGN.md` 8.1.
+  La jerarquía frente al nivel se logra con tamaño y peso, nunca bajando el
+  contraste. Sin tope de cantidad por ahora (con cinco nombres cortos la
+  tarjeta mide ~180px).
+- El reinicio de `perfil.css` va en `@layer base` (2026-10-26): un CSS sin
+  capa le gana a TODA utilidad de Tailwind v4, sin importar la
+  especificidad. Suelto, `.perfil a { color: inherit }` pisaba `text-ink`
+  (los nombres de los reconocimientos salían a 1,3:1) y `.perfil * {
+  padding: 0 }` anulaba `px-4 py-3`. Cualquier regla genérica nueva de
+  `perfil.css` que pueda chocar con una utilidad usada dentro del perfil va
+  en esa capa. Si una utilidad de Tailwind "no funciona" dentro de
+  `.perfil`, mirar primero esto.
 - (agrega aquí cada decisión nueva que cierres, con fecha)
